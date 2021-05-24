@@ -1,11 +1,9 @@
 package org.sunbird.learner.actors.coursebatch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
 import org.sunbird.actor.base.BaseActor;
 import org.sunbird.common.models.util.ActorOperations;
 import org.sunbird.common.models.util.JsonKey;
-import org.sunbird.common.models.util.LoggerUtil;
 import org.sunbird.common.models.util.PropertiesCache;
 import org.sunbird.common.request.Request;
 import org.sunbird.common.request.RequestContext;
@@ -31,6 +29,8 @@ public class CourseBatchNotificationActor extends BaseActor {
           .getProperty(JsonKey.SUNBIRD_COURSE_BATCH_NOTIFICATION_SIGNATURE);
   private static String baseUrl =
       PropertiesCache.getInstance().getProperty(JsonKey.SUNBIRD_WEB_URL);
+  private static String courseBatchPath =
+          PropertiesCache.getInstance().getProperty(JsonKey.COURSE_BATCH_PATH);
   private UserOrgService userOrgService = UserOrgServiceImpl.getInstance();
 
   @Override
@@ -146,7 +146,7 @@ public class CourseBatchNotificationActor extends BaseActor {
     Map<String, Object> courseBatchObject = JsonUtil.convert(courseBatch, Map.class);
 
     Map<String, Object> request = new HashMap<>();
-    Map<String, Object> requestMap = new HashMap<String, Object>();
+    Map<String, Object> requestMap = new HashMap<>();
 
     requestMap.put(JsonKey.SUBJECT, subject);
     requestMap.put(JsonKey.EMAIL_TEMPLATE_TYPE, template);
@@ -168,9 +168,8 @@ public class CourseBatchNotificationActor extends BaseActor {
   }
 
   private String getCourseBatchUrl(String courseId, String batchId) {
-
-    String url = baseUrl + "/learn/course/" + courseId + "/batch/" + batchId;
-    return url;
+    String url = courseBatchPath.replace("courseId", courseId).replace("batchId", batchId);
+    return baseUrl+url;
   }
 
   private void sendMail(RequestContext requestContext, Map<String, Object> requestMap, String authToken) {
