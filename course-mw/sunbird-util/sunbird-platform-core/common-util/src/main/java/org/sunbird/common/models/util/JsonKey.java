@@ -1062,7 +1062,7 @@ public final class JsonKey {
   public static final String BATCH_ID_KEY = "batchid";
   public static final String USER_ID_KEY = "userid";
   public static final String OLD_CREATED_DATE = "oldCreatedDate";
-
+  public static final String COURSE_BATCH_PATH = "sunbird_course_batch_path";
 
   private JsonKey() {}
 }
