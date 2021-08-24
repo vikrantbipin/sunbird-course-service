@@ -5,23 +5,22 @@ import akka.actor.ActorRef;
 import com.fasterxml.jackson.databind.JsonNode;
 import controllers.BaseController;
 import controllers.coursemanagement.validator.CourseBatchRequestValidator;
+import org.sunbird.common.models.util.ActorOperations;
+import org.sunbird.common.models.util.JsonKey;
+import org.sunbird.common.models.util.ProjectUtil.EsType;
+import org.sunbird.common.request.Request;
+import play.mvc.Http;
+import play.mvc.Result;
+import util.Attrs;
+
+import javax.inject.Inject;
+import javax.inject.Named;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import javax.inject.Inject;
-import javax.inject.Named;
-import org.sunbird.common.models.util.ActorOperations;
-import org.sunbird.common.models.util.JsonKey;
-import org.sunbird.common.models.util.LoggerEnum;
-import org.sunbird.common.models.util.ProjectLogger;
-import org.sunbird.common.models.util.ProjectUtil.EsType;
-import org.sunbird.common.request.Request;
-import play.mvc.Http;
-import play.mvc.Result;
-import util.Attrs;
 
 public class CourseBatchController extends BaseController {
 
@@ -118,7 +117,12 @@ public class CourseBatchController extends BaseController {
         ActorOperations.GET_PARTICIPANTS.getValue(),
         httpRequest.body().asJson(),
         (request) -> {
-          new CourseBatchRequestValidator().validateGetParticipantsRequest((Request) request);
+            Request req = (Request) request;
+            String batchIdKey = req.getRequest().containsKey(JsonKey.BATCH_ID)
+                    ? JsonKey.BATCH_ID
+                    : JsonKey.FIXED_BATCH_ID;
+            req.getRequest().put(JsonKey.BATCH_ID, req.getRequest().get(batchIdKey));
+            new CourseBatchRequestValidator().validateGetParticipantsRequest(req);
           return null;
         },
         getAllRequestHeaders(httpRequest),

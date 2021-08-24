@@ -53,7 +53,7 @@ public class BulkUploadManagementActor extends BaseBulkUploadActor {
 
   @Override
   public void onReceive(Request request) throws Throwable {
-    Util.initializeContext(request, TelemetryEnvKey.USER, this.getClass().getName());
+    Util.initializeContext(request, TelemetryEnvKey.USER);
 
     // set request id fto thread local...
     if (request.getOperation().equalsIgnoreCase(ActorOperations.BULK_UPLOAD.getValue())) {
