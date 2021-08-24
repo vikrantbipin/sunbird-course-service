@@ -38,7 +38,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
     val jsonFields = Set[String]("progressdetails")
 
     override def onReceive(request: Request): Unit = {
-        Util.initializeContext(request, TelemetryEnvKey.BATCH, this.getClass.getName)
+        Util.initializeContext(request, TelemetryEnvKey.BATCH)
 
         dateFormatter.setTimeZone(
             TimeZone.getTimeZone(ProjectUtil.getConfigValue(JsonKey.SUNBIRD_TIMEZONE)))

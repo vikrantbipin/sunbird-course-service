@@ -1,9 +1,7 @@
 package util;
 
 import org.sunbird.aggregate.CollectionSummaryAggregate;
-import org.sunbird.enrolments.CourseEnrolmentActor;
-import org.sunbird.enrolments.ContentConsumptionActor;
-import org.sunbird.enrolments.CourseEnrolmentActor;
+import org.sunbird.enrolments.*;
 import org.sunbird.group.GroupAggregatesActor;
 import org.sunbird.learner.actors.BackgroundJobManager;
 import org.sunbird.learner.actors.PageManagementActor;
@@ -19,6 +17,8 @@ import org.sunbird.learner.actors.health.HealthActor;
 import org.sunbird.learner.actors.qrcodedownload.QRCodeDownloadManagementActor;
 import org.sunbird.learner.actors.search.SearchHandlerActor;
 import org.sunbird.learner.actors.syncjobmanager.EsSyncActor;
+import org.sunbird.learner.actors.event.EventManagementActor;
+import org.sunbird.learner.actors.event.EventSetManagementActor;
 import org.sunbird.learner.actors.textbook.TextbookTocActor;
 
 public enum ACTOR_NAMES {
@@ -41,8 +41,12 @@ public enum ACTOR_NAMES {
   COURSE_BATCH_NOTIFICATION_ACTOR(CourseBatchNotificationActor.class, "course-batch-notification-actor"),
     BACKGROUND_JOB_MANAGER_ACTOR(BackgroundJobManager.class, "background-job-manager-actor"),
   COURSE_MANAGEMENT_ACTOR(CourseManagementActor.class, "course-management-actor"),
+  EVENT_SET_MANAGEMENT_ACTOR(EventSetManagementActor.class, "eventset-management-actor"),
+  EVENT_MANAGEMENT_ACTOR(EventManagementActor.class, "event-management-actor"),
   //Scala Actors
   COURSE_ENROLMENT_ACTOR(CourseEnrolmentActor.class, "course-enrolment-actor"),
+  EVENT_SET_ENROLMENT_ACTOR(EventSetEnrolmentActor.class, "eventset-enrolment-actor"),
+  EVENT_CONSUMPTION_ACTOR(EventConsumptionActor.class, "event-consumption-actor"),
   CONTENT_CONSUMPTION_ACTOR(ContentConsumptionActor.class, "content-consumption-actor"),
   GROUP_AGGREGATES_ACTORS(GroupAggregatesActor.class, "group-aggregates-actor");
 

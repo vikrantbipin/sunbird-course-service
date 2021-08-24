@@ -51,6 +51,7 @@ public final class Util {
         JsonKey.LEARNER_CONTENT_DB, getDbInfoObject(COURSE_KEY_SPACE_NAME, "user_content_consumption"));
     dbInfoMap.put(
         JsonKey.COURSE_MANAGEMENT_DB, getDbInfoObject(KEY_SPACE_NAME, "course_management"));
+    dbInfoMap.put(JsonKey.COURSE_USER_ENROLMENTS_DB, getDbInfoObject(COURSE_KEY_SPACE_NAME, "user_enrolments"));
     dbInfoMap.put(JsonKey.PAGE_MGMT_DB, getDbInfoObject(KEY_SPACE_NAME, "page_management"));
     dbInfoMap.put(JsonKey.PAGE_SECTION_DB, getDbInfoObject(KEY_SPACE_NAME, "page_section"));
     dbInfoMap.put(JsonKey.SECTION_MGMT_DB, getDbInfoObject(KEY_SPACE_NAME, "page_section"));
@@ -343,12 +344,12 @@ public final class Util {
     return null != obj ? true : false;
   }
 
-  public static void initializeContext(Request actorMessage, String env, String log_env) {
+  public static void initializeContext(Request actorMessage, String env) {
     Map<String, Object> requestContext = null;
     if ((actorMessage.getContext().get(JsonKey.TELEMETRY_CONTEXT) != null)) {
       // means request context is already set by some other actor ...
       requestContext =
-          (Map<String, Object>) actorMessage.getContext().get(JsonKey.TELEMETRY_CONTEXT);
+              (Map<String, Object>) actorMessage.getContext().get(JsonKey.TELEMETRY_CONTEXT);
     } else {
       requestContext = new HashMap<>();
       // request level info ...
@@ -370,15 +371,11 @@ public final class Util {
       requestContext.put(JsonKey.DEVICE_ID, deviceId);
       requestContext.put(JsonKey.X_AUTH_TOKEN, getKeyFromContext(JsonKey.X_AUTH_TOKEN, actorMessage));
 
-        actorMessage.getContext().putAll(requestContext);
-      if (actorMessage.getRequestContext() != null)
-        actorMessage.getRequestContext().setEnv(log_env);
-
+      actorMessage.getContext().putAll(requestContext);
       // and global context will be set at the time of creation of thread local
       // automatically ...
     }
   }
-
   public static String getKeyFromContext(String key, Request actorMessage) {
     return actorMessage.getContext() != null && actorMessage.getContext().containsKey(key)
         ? (String) actorMessage.getContext().get(key)

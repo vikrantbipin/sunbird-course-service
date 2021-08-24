@@ -54,7 +54,7 @@ public class BulkUploadBackGroundJobActor extends BaseActor {
 
   @Override
   public void onReceive(Request request) throws Throwable {
-    Util.initializeContext(request, TelemetryEnvKey.USER, this.getClass().getName());
+    Util.initializeContext(request, TelemetryEnvKey.USER);
     if (request.getOperation().equalsIgnoreCase(ActorOperations.PROCESS_BULK_UPLOAD.getValue())) {
       process(request);
     } else {

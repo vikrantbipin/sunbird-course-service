@@ -69,7 +69,7 @@ public class CourseBatchManagementActor extends BaseActor {
   @Override
   public void onReceive(Request request) throws Throwable {
 
-    Util.initializeContext(request, TelemetryEnvKey.BATCH, this.getClass().getName());
+    Util.initializeContext(request, TelemetryEnvKey.BATCH);
 
     String requestedOperation = request.getOperation();
     switch (requestedOperation) {
