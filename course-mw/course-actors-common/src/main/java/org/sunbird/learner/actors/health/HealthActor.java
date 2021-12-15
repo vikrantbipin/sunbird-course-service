@@ -41,7 +41,7 @@ public class HealthActor extends BaseActor {
     if (message instanceof Request) {
       try {
         Request actorMessage = message;
-        Util.initializeContext(actorMessage, TelemetryEnvKey.USER, this.getClass().getName());
+        Util.initializeContext(actorMessage, TelemetryEnvKey.USER);
 
         // set request id fto thread loacl...
         if (actorMessage.getOperation().equalsIgnoreCase(ActorOperations.HEALTH_CHECK.getValue())) {

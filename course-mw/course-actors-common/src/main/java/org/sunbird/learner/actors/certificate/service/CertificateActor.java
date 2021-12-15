@@ -41,7 +41,7 @@ public class CertificateActor extends BaseActor {
 
   @Override
   public void onReceive(Request request) throws Throwable {
-    Util.initializeContext(request, TelemetryEnvKey.USER, this.getClass().getName());
+    Util.initializeContext(request, TelemetryEnvKey.USER);
 
     String requestedOperation = request.getOperation();
     switch (requestedOperation) {

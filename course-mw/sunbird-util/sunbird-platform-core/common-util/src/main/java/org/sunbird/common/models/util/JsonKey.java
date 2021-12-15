@@ -148,6 +148,8 @@ public final class JsonKey {
   public static final String COURSE_DURATION = "courseDuration";
   public static final String COURSE_ENROLL_DATE = "enrolledDate";
   public static final String COURSE_ID = "courseId";
+  public static final String ENROLLABLE_ITEM_ID = "enrollableItemId";
+  public static final String FIXED_BATCH_ID = "fixedBatchId";
   public static final String COURSE_IDS = "courseIds";
   public static final String COURSE_LIST = "courseList";
   public static final String COURSE_LOGO_URL = "courseLogoUrl";
@@ -403,6 +405,7 @@ public final class JsonKey {
   public static final String OTP_EMAIL_RESET_PASSWORD_TEMPLATE = "otpEmailResetPasswordTemplate";
   public static final String OTP_PHONE_RESET_PASSWORD_TEMPLATE = "otpPhoneResetPasswordTemplate";
   public static final String VERIFY_PHONE_OTP_TEMPLATE = "verifyPhoneOtpTemplate";
+  public static final String COURSE_USER_ENROLMENTS_DB = "course_user_enrolments_db";
   public static final String PAGE = "page";
   public static final String PAGE_ID = "pageId";
   public static final String PAGE_MGMT_DB = "page_mgmt_db";
@@ -1064,8 +1067,8 @@ public final class JsonKey {
   public static final String BATCH_ID_KEY = "batchid";
   public static final String USER_ID_KEY = "userid";
   public static final String OLD_CREATED_DATE = "oldCreatedDate";
+  public static final String COURSE_BATCH_PATH = "sunbird_course_batch_path";
   public static final String X_LOGGING_HEADERS = "X_LOGGING_HEADERS";
-
 
   private JsonKey() {}
 }

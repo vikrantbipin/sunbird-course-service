@@ -144,6 +144,8 @@ public interface ResponseMessage {
     String COURSE_BATCH_ENROLLMENT_DATE_ENDED = "Course batch enrollment date has ended.";
     String EXISTING_ORG_MEMBER = "You already have a membership of this organization.";
     String CONTENT_TYPE_ERROR = "Please add Content-Type header with value application/json";
+    String MISSING_FIXED_BATCH_ID = "Missing Fixed Batch Id.";
+    String CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS = "Cannot update event set having enrollments.";
     String INVALID_PROPERTY_ERROR = "Invalid property {0}.";
     String USER_NAME_OR_ID_ERROR = "Please provide either username or userId.";
     String USER_ACCOUNT_BLOCKED = "User account has been blocked .";
@@ -172,7 +174,7 @@ public interface ResponseMessage {
     String INVALID_CSV_FILE = "Please provide valid csv file.";
     String INVALID_COURSE_BATCH_ID = "Invalid course batch id ";
     String COURSE_BATCH_ID_MISSING = "Course batch Id required";
-    String ENROLLMENT_TYPE_VALIDATION = "Enrollment type should be invite-only.";
+    String ENROLLMENT_TYPE_VALIDATION = "Enrollment type value is invalid.";
     String USER_NOT_BELONGS_TO_ANY_ORG = "User does not belongs to any org .";
     String INVALID_OBJECT_TYPE = "Invalid Object Type.";
     String INVALID_PROGRESS_STATUS =
@@ -578,6 +580,8 @@ public interface ResponseMessage {
     String COURSE_BATCH_ALREADY_COMPLETED = "COURSE_BATCH_ALREADY_COMPLETED";
     String COURSE_BATCH_ENROLLMENT_DATE_ENDED = "COURSE_BATCH_ENROLLMENT_DATE_ENDED";
     String CONTENT_TYPE_ERROR = "CONTENT_TYPE_ERROR";
+    String MISSING_FIXED_BATCH_ID = "MISSING_FIXED_BATCH_ID";
+    String CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS = "CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS";
     String INVALID_PROPERTY_ERROR = "INVALID_PROPERTY_ERROR";
     String USER_NAME_OR_ID_ERROR = "USER_NAME_OR_ID_ERROR";
     String USER_ACCOUNT_BLOCKED = "USER_ACCOUNT_BLOCKED";

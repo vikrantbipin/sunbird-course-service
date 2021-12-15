@@ -2,7 +2,7 @@ package controllers.courseenrollment;
 
 import akka.actor.ActorRef;
 import controllers.BaseController;
-import controllers.courseenrollment.validator.CourseEnrollmentRequestValidator;
+import controllers.enrollment.validator.CourseEnrollmentRequestValidator;
 import org.sunbird.common.models.util.ActorOperations;
 import org.sunbird.common.models.util.JsonKey;
 import org.sunbird.common.models.util.ProjectUtil;

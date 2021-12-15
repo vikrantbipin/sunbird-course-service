@@ -81,7 +81,7 @@ public class PageManagementActor extends BaseActor {
   }
   @Override
   public void onReceive(Request request) throws Throwable {
-    Util.initializeContext(request, TelemetryEnvKey.PAGE, this.getClass().getName());
+    Util.initializeContext(request, TelemetryEnvKey.PAGE);
 
     if(request.getOperation().equalsIgnoreCase(ActorOperations.GET_DIAL_PAGE_DATA.getValue())) {
       getDIALPageData(request);
