@@ -754,10 +754,12 @@ public class BaseController extends Controller {
   public org.sunbird.common.request.Request transformUserId(
       org.sunbird.common.request.Request request) {
     if (request != null && request.getRequest() != null) {
+      logger.info(null, "BaseController.transformUserId - userId before -> " + (String) request.getRequest().get(JsonKey.USER_ID));
       String id = (String) request.getRequest().get(JsonKey.ID);
       request.getRequest().put(JsonKey.ID, ProjectUtil.getLmsUserId(id));
       id = (String) request.getRequest().get(JsonKey.USER_ID);
       request.getRequest().put(JsonKey.USER_ID, ProjectUtil.getLmsUserId(id));
+      logger.info(null, "BaseController.transformUserId - userId after -> " + (String) request.getRequest().get(JsonKey.USER_ID));
       return request;
     }
     return request;

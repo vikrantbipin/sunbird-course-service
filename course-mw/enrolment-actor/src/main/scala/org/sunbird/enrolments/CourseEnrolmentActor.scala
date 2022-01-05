@@ -83,6 +83,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val courseId: String = request.get(JsonKey.COURSE_ID).asInstanceOf[String]
         val userId: String = request.get(JsonKey.USER_ID).asInstanceOf[String]
         val batchId: String = request.get(JsonKey.BATCH_ID).asInstanceOf[String]
+        println("CourseEnrolmentActor :: enroll :: received UserId " + userId)
         val isFixedBatch: Boolean = request.getRequest.containsKey(JsonKey.FIXED_BATCH_ID)
         val batchData: CourseBatch = courseBatchDao.readById( courseId, batchId, request.getRequestContext)
         val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, courseId, batchId)
