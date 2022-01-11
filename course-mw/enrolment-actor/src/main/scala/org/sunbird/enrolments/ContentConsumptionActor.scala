@@ -372,11 +372,8 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
                 ProjectUtil.removeUnwantedFields(m, JsonKey.DATE_TIME, JsonKey.USER_ID, JsonKey.ADDED_BY, JsonKey.LAST_UPDATED_TIME, JsonKey.OLD_LAST_ACCESS_TIME, JsonKey.OLD_LAST_UPDATED_TIME, JsonKey.OLD_LAST_COMPLETED_TIME)
                 m.put(JsonKey.COLLECTION_ID, m.getOrDefault(JsonKey.COURSE_ID, ""))
 		jsonFields.foreach(field =>
-                    if(fields.contains(field)) {
-			logger.info(request.getRequestContext,"ContentConsumptionActor: getConsumption : Processing field : " + field)
-			logger.info(request.getRequestContext,"ContentConsumptionActor: getConsumption : map value : " + m.getOrDefault(field,"")) 
-                        m.put(field, mapper.readTree(m.get(field).asInstanceOf[String]))
-		    }
+                    if(fields.contains(field))
+                        m.put(field, m.getOrDefault(field,""))
                 )
                 val formattedMap = JsonUtil.convertWithDateFormat(m, classOf[util.Map[String, Object]], dateFormatter)
                 if (fields.contains(JsonKey.ASSESSMENT_SCORE))
