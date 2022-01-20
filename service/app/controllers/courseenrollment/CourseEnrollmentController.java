@@ -232,4 +232,29 @@ public class CourseEnrollmentController extends BaseController {
             getAllRequestHeaders(httpRequest),
             httpRequest);
     }
+
+    public CompletionStage<Result> adminGetUserEnrolledCourses(Http.Request httpRequest) {
+        return handleRequest(
+                courseEnrolmentActor, "listEnrol",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    Map<String, String[]> queryParams = new HashMap<>(httpRequest.queryString());
+                    if(queryParams.containsKey("fields")) {
+                        Set<String> fields = new HashSet<>(Arrays.asList(queryParams.get("fields")[0].split(",")));
+                        fields.addAll(Arrays.asList(JsonKey.NAME, JsonKey.DESCRIPTION, JsonKey.LEAF_NODE_COUNT, JsonKey.APP_ICON));
+                        queryParams.put("fields", fields.toArray(new String[0]));
+                    }
+                    request
+                            .getContext()
+                            .put(JsonKey.URL_QUERY_STRING, getQueryString(queryParams));
+                    request
+                            .getContext()
+                            .put(JsonKey.BATCH_DETAILS, httpRequest.queryString().get(JsonKey.BATCH_DETAILS));
+
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
 }
