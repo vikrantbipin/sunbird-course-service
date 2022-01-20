@@ -109,14 +109,15 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def list(request: Request): Unit = {
         val userId = request.get(JsonKey.USER_ID).asInstanceOf[String]
+        val courseId = request.get(JsonKey.COURSE_ID).asInstanceOf[java.util.List[String]]
         logger.info(request.getRequestContext,"CourseEnrolmentActor :: list :: UserId = " + userId)
         val response = if (isCacheEnabled && request.getContext.get("cache").asInstanceOf[Boolean])
-            getCachedEnrolmentList(userId, () => getEnrolmentList(request, userId)) else getEnrolmentList(request, userId)
+            getCachedEnrolmentList(userId, () => getEnrolmentList(request, userId, courseId)) else getEnrolmentList(request, userId, courseId)
         sender().tell(response, self)
     }
 
-    def getActiveEnrollments(userId: String, requestContext: RequestContext): java.util.List[java.util.Map[String, AnyRef]] = {
-        val enrolments: java.util.List[java.util.Map[String, AnyRef]] = userCoursesDao.listEnrolments(requestContext, userId)
+    def getActiveEnrollments(userId: String, courseId: java.util.List[String], requestContext: RequestContext): java.util.List[java.util.Map[String, AnyRef]] = {
+        val enrolments: java.util.List[java.util.Map[String, AnyRef]] = userCoursesDao.listEnrolments(requestContext, userId, courseId);
         if (CollectionUtils.isNotEmpty(enrolments))
             enrolments.filter(e => e.getOrDefault(JsonKey.ACTIVE, false.asInstanceOf[AnyRef]).asInstanceOf[Boolean]).toList.asJava
         else
@@ -303,9 +304,9 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         }
     }
 
-    def getEnrolmentList(request: Request, userId: String): Response = {
+    def getEnrolmentList(request: Request, userId: String, courseId: java.util.List[String]): Response = {
         logger.info(request.getRequestContext,"CourseEnrolmentActor :: getCachedEnrolmentList :: fetching data from cassandra with userId " + userId)
-        val activeEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getActiveEnrollments( userId, request.getRequestContext)
+        val activeEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getActiveEnrollments( userId, courseId, request.getRequestContext)
         val enrolments: java.util.List[java.util.Map[String, AnyRef]] = {
             if (CollectionUtils.isNotEmpty(activeEnrolments)) {
               val courseIds: java.util.List[String] = activeEnrolments.map(e => e.getOrDefault(JsonKey.COURSE_ID, "").asInstanceOf[String]).distinct.filter(id => StringUtils.isNotBlank(id)).toList.asJava
