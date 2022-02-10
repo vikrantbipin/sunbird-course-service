@@ -255,8 +255,12 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
         val inputStatus = inputContent.getOrDefault(JsonKey.STATUS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number].intValue()
         val updatedContent = new java.util.HashMap[String, AnyRef]()
         updatedContent.putAll(inputContent)
-	val parsedMap = new java.util.HashMap[String, AnyRef]()
-        jsonFields.flatMap(f => if(inputContent.containsKey(f)) Some(parsedMap.put(f,mapper.writeValueAsString(inputContent.get(f)))) else None)
+	    val parsedMap = new java.util.HashMap[String, AnyRef]()
+        jsonFields.foreach(field =>
+            if(inputContent.containsKey(field)) {
+                parsedMap.put(field, mapper.writeValueAsString(inputContent.get(f)))
+            }
+        )
         updatedContent.putAll(parsedMap)
         val inputCompletedTime = parseDate(inputContent.getOrDefault(JsonKey.LAST_COMPLETED_TIME, "").asInstanceOf[String])
         val inputAccessTime = parseDate(inputContent.getOrDefault(JsonKey.LAST_ACCESS_TIME, "").asInstanceOf[String])
