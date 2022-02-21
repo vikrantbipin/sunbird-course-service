@@ -258,7 +258,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
 	    val parsedMap = new java.util.HashMap[String, AnyRef]()
         jsonFields.foreach(field =>
             if(inputContent.containsKey(field)) {
-                parsedMap.put(field, mapper.writeValueAsString(inputContent.get(f)))
+                parsedMap.put(field, mapper.writeValueAsString(inputContent.get(field)))
             }
         )
         updatedContent.putAll(parsedMap)
