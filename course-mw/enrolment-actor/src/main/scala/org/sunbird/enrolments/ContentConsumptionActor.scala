@@ -185,7 +185,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
                             val updateData = getLatestReadDetails(userId, batchId, contents)
                             cassandraOperation.updateRecordV2(requestContext, enrolmentDBInfo.getKeySpace, enrolmentDBInfo.getTableName, updateData._1, updateData._2, true)
                             contentIds.map(id => responseMessage.put(id,JsonKey.SUCCESS))
-
+                            logger.info(requestContext, "ContentConsumptionActor: updatedDate in user_content_consumption " + updateData)
                         } else {
                             logger.info(requestContext, "ContentConsumptionActor: addContent : User Id is invalid : " + userId)
                             invalidContents.addAll(entry._2.asJava)
