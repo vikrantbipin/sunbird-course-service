@@ -740,6 +740,7 @@ public abstract class CassandraOperationImpl implements CassandraOperation {
     long startTime = System.currentTimeMillis();
     logger.info(requestContext,
             "Cassandra Service batchInsertLogged method started at ==" + startTime);
+    logger.info(requestContext, "Inserting records -> " + records);
 
     Session session = connectionManager.getSession(keyspaceName);
     Response response = new Response();
