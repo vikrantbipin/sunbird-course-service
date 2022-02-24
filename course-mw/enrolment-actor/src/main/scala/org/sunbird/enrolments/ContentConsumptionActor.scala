@@ -54,6 +54,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
     }
 
     def updateConsumption(request: Request): Unit = {
+        logger.info(request.getRequestContext,"Update Consumption called")
         val requestBy = request.get(JsonKey.REQUESTED_BY).asInstanceOf[String]
         val requestedFor = request.get(JsonKey.REQUESTED_FOR).asInstanceOf[String]
         val assessmentEvents = request.getRequest.getOrDefault(JsonKey.ASSESSMENT_EVENTS, new java.util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
@@ -155,6 +156,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
     }
 
     def processContents(contentList: java.util.List[java.util.Map[String, AnyRef]], requestContext: RequestContext, requestedBy: String, requestedFor: String): Option[Response] = {
+        logger.info(requestContext, "Inside processContents ")
         if(CollectionUtils.isNotEmpty(contentList)) {
             val batchContentList: Map[String, List[java.util.Map[String, AnyRef]]] = contentList.filter(event => StringUtils.isNotBlank(event.getOrDefault(JsonKey.BATCH_ID, "").asInstanceOf[String])).toList.groupBy(event => event.get(JsonKey.BATCH_ID).asInstanceOf[String])
             val batchIds = batchContentList.keySet.toList.asJava
@@ -169,6 +171,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
                 val batchId = input._1
                 if(!invalidBatchIds.contains(batchId) && !completedBatchIds.contains(batchId)) {
                     val userContents = getDataGroupedByUserId(input._2, requestedBy, requestedFor)
+                    logger.info(requestContext, "Inside processContents userContents "+userContents)
                     userContents.foreach(entry => {
                         val userId = entry._1
                         if(validUserIds.contains(userId)) {
@@ -176,6 +179,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
                             if(entry._2.head.containsKey(JsonKey.COLLECTION_ID)) entry._2.head.remove(JsonKey.COLLECTION_ID)
                             val contentIds = entry._2.map(e => e.getOrDefault(JsonKey.CONTENT_ID, "").asInstanceOf[String]).distinct.asJava
                             val existingContents = getContentsConsumption(userId, courseId, contentIds, batchId, defaultFields, requestContext).groupBy(x => x.get("contentId").asInstanceOf[String]).map(e => e._1 -> e._2.toList.head).toMap
+                            logger.info(requestContext, "Inside processContents existingContents "+existingContents)
                             val contents:List[java.util.Map[String, AnyRef]] = entry._2.toList.map(inputContent => {
                                 val existingContent = existingContents.getOrElse(inputContent.get("contentId").asInstanceOf[String], new java.util.HashMap[String, AnyRef])
                                 CassandraUtil.changeCassandraColumnMapping(processContentConsumption(inputContent, existingContent, userId))
@@ -253,6 +257,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
     }
 
     def processContentConsumption(inputContent: java.util.Map[String, AnyRef], existingContent: java.util.Map[String, AnyRef], userId: String) = {
+        println("Inside processContentConsumption ")
         val inputStatus = inputContent.getOrDefault(JsonKey.STATUS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number].intValue()
         val updatedContent = new java.util.HashMap[String, AnyRef]()
         updatedContent.putAll(inputContent)
@@ -265,11 +270,14 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
         updatedContent.putAll(parsedMap)
         val inputCompletedTime = parseDate(inputContent.getOrDefault(JsonKey.LAST_COMPLETED_TIME, "").asInstanceOf[String])
         val inputAccessTime = parseDate(inputContent.getOrDefault(JsonKey.LAST_ACCESS_TIME, "").asInstanceOf[String])
+        println("Inside processContentConsumption existingContent "+existingContent)
         if(MapUtils.isNotEmpty(existingContent)) {
             val existingAccessTime = if(parseDate(existingContent.get(JsonKey.LAST_ACCESS_TIME).asInstanceOf[Date]) == null) parseDate(existingContent.getOrDefault(JsonKey.OLD_LAST_ACCESS_TIME, "").asInstanceOf[String]) else parseDate(existingContent.get(JsonKey.LAST_ACCESS_TIME).asInstanceOf[Date])
             updatedContent.put(JsonKey.LAST_ACCESS_TIME, compareTime(existingAccessTime, inputAccessTime))
             val inputProgress = inputContent.getOrDefault(JsonKey.PROGRESS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number].intValue()
+            println("Inside processContentConsumption inputProgress "+inputProgress)
             val existingProgress = Option(existingContent.getOrDefault(JsonKey.PROGRESS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number]).getOrElse(0.asInstanceOf[Number]).intValue()
+            println("Inside processContentConsumption existingProgress "+existingProgress)
             updatedContent.put(JsonKey.PROGRESS, List(inputProgress, existingProgress).max.asInstanceOf[AnyRef])
             val existingStatus = Option(existingContent.getOrDefault(JsonKey.STATUS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number]).getOrElse(0.asInstanceOf[Number]).intValue()
             val existingCompletedTime = if (parseDate(existingContent.get(JsonKey.LAST_COMPLETED_TIME).asInstanceOf[Date]) == null) parseDate(existingContent.getOrDefault(JsonKey.OLD_LAST_COMPLETED_TIME, "").asInstanceOf[String]) else parseDate(existingContent.get(JsonKey.LAST_COMPLETED_TIME).asInstanceOf[Date])

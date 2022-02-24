@@ -271,6 +271,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             enrolment.put("status", getCompletionStatus(progress, leafNodesCount).asInstanceOf[AnyRef])
             enrolment.put("completionPercentage", getCompletionPerc(progress, leafNodesCount).asInstanceOf[AnyRef])
         })
+        println("CourseEnrolmentActor :: updateProgressData :: enrolments " + enrolments)
         enrolments
     }
 
@@ -307,6 +308,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
     def getEnrolmentList(request: Request, userId: String, courseIdList: java.util.List[String]): Response = {
         logger.info(request.getRequestContext,"CourseEnrolmentActor :: getCachedEnrolmentList :: fetching data from cassandra with userId " + userId)
         val activeEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getActiveEnrollments( userId, courseIdList, request.getRequestContext)
+        logger.info(request.getRequestContext,"CourseEnrolmentActor :: getEnrolmentList :: activeEnrolments " + activeEnrolments)
         val enrolments: java.util.List[java.util.Map[String, AnyRef]] = {
             if (CollectionUtils.isNotEmpty(activeEnrolments)) {
               val courseIds: java.util.List[String] = activeEnrolments.map(e => e.getOrDefault(JsonKey.COURSE_ID, "").asInstanceOf[String]).distinct.filter(id => StringUtils.isNotBlank(id)).toList.asJava
