@@ -111,6 +111,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val userId = request.get(JsonKey.USER_ID).asInstanceOf[String]
         val courseIdList = request.get(JsonKey.COURSE_IDS).asInstanceOf[java.util.List[String]]
         logger.info(request.getRequestContext,"CourseEnrolmentActor :: list :: UserId = " + userId)
+        logger.info(request.getRequestContext,"CourseEnrolmentActor :: list :: isCacheEnabled = " + isCacheEnabled)
         val response = if (isCacheEnabled && request.getContext.get("cache").asInstanceOf[Boolean])
             getCachedEnrolmentList(userId, () => getEnrolmentList(request, userId, courseIdList)) else getEnrolmentList(request, userId, courseIdList)
         sender().tell(response, self)
@@ -126,6 +127,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def addCourseDetails(activeEnrolments: java.util.List[java.util.Map[String, AnyRef]], courseIds: java.util.List[String] , request:Request): java.util.List[java.util.Map[String, AnyRef]] = {
         val requestBody: String =  prepareSearchRequest(courseIds, request)
+        println("Inside CourseEnrolmentActor :  addCourseDetails : requestBody : "+requestBody)
         val searchResult:java.util.Map[String, AnyRef] = ContentSearchUtil.searchContentSync(request.getRequestContext, request.getContext.getOrDefault(JsonKey.URL_QUERY_STRING,"").asInstanceOf[String], requestBody, request.get(JsonKey.HEADER).asInstanceOf[java.util.Map[String, String]])
         val coursesList: java.util.List[java.util.Map[String, AnyRef]] = searchResult.getOrDefault(JsonKey.CONTENTS, new java.util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
         val coursesMap = {
@@ -313,6 +315,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             if (CollectionUtils.isNotEmpty(activeEnrolments)) {
               val courseIds: java.util.List[String] = activeEnrolments.map(e => e.getOrDefault(JsonKey.COURSE_ID, "").asInstanceOf[String]).distinct.filter(id => StringUtils.isNotBlank(id)).toList.asJava
                 val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails(activeEnrolments, courseIds, request)
+                logger.info(request.getRequestContext,"CourseEnrolmentActor :: getEnrolmentList :: enrolmentList " + enrolmentList)
                 val updatedEnrolmentList = updateProgressData(enrolmentList, userId, courseIds, request.getRequestContext)
                 addBatchDetails(updatedEnrolmentList, request)
             } else new java.util.ArrayList[java.util.Map[String, AnyRef]]()
