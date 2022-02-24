@@ -453,7 +453,7 @@ public abstract class CassandraOperationImpl implements CassandraOperation {
                   CassandraUtil.createQuery(x.getKey(), x.getValue(), selectWhere);
                 });
       }
-      logger.debug(requestContext, selectWhere.getQueryString());
+      logger.info(requestContext, selectWhere.getQueryString());
       ResultSet results = session.execute(selectWhere);
       response = CassandraUtil.createResponse(results);
     } catch (Exception e) {
