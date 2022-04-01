@@ -172,7 +172,7 @@ public interface ResponseMessage {
     String INVALID_CSV_FILE = "Please provide valid csv file.";
     String INVALID_COURSE_BATCH_ID = "Invalid course batch id ";
     String COURSE_BATCH_ID_MISSING = "Course batch Id required";
-    String ENROLLMENT_TYPE_VALIDATION = "Enrollment type should be invite-only.";
+    String ENROLLMENT_TYPE_VALIDATION = "Invalid Enrollment type value.";
     String USER_NOT_BELONGS_TO_ANY_ORG = "User does not belongs to any org .";
     String INVALID_OBJECT_TYPE = "Invalid Object Type.";
     String INVALID_PROGRESS_STATUS =
@@ -457,6 +457,8 @@ public interface ResponseMessage {
     String ACTIVITY_ID_MISSING = "ActivityId is mandatory.";
     String ACTIVITY_TYPE_MISSING = "ActivityType is mandatory.";
     String ERR_CALLING_GROUP_API = "Error while calling group api.";
+    String MISSING_FIXED_BATCH_ID = "Missing Fixed Batch Id.";
+    String CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS = "Cannot update event set having enrollments.";
   }
 
   interface Key {
@@ -842,5 +844,7 @@ public interface ResponseMessage {
     String ACTIVITY_ID_MISSING = "ACTIVITY_ID_MISSING";
     String ACTIVITY_TYPE_MISSING = "ACTIVITY_TYPE_MISSING";
     String ERR_CALLING_GROUP_API = "ERR_CALLING_GROUOP_API";
+    String MISSING_FIXED_BATCH_ID = "MISSING_FIXED_BATCH_ID";
+    String CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS = "CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS";
   }
 }
