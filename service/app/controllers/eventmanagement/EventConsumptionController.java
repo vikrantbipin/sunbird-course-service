@@ -7,10 +7,10 @@ import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.util.JsonKey;
 import org.sunbird.common.request.Request;
 import org.sunbird.common.responsecode.ResponseCode;
+import org.sunbird.learner.util.Util;
 import play.mvc.Http;
 import play.mvc.Result;
 import util.Attrs;
-import org.sunbird.common.Common;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -29,7 +29,7 @@ public class EventConsumptionController extends BaseController {
             Request request =
                     createAndInitRequest("getConsumption", requestJson, httpRequest);
             request = transformUserId(request);
-            Common.handleFixedBatchIdRequest(request);
+            Util.handleFixedBatchIdRequest(request);
             validateAndSetRequest(request);
             return actorResponseHandler(
                     actorRef, request, timeout, null, httpRequest);
@@ -43,7 +43,7 @@ public class EventConsumptionController extends BaseController {
             JsonNode requestData = httpRequest.body().asJson();
             Request request = (Request) mapper.RequestMapper.mapRequest(requestData, Request.class);
             request = transformUserId(request);
-            Common.handleFixedBatchIdRequest(request);
+            Util.handleFixedBatchIdRequest(request);
             request.getRequest().remove(JsonKey.FIXED_BATCH_ID);
             request.getRequest().remove(JsonKey.ID);
             validateAndSetRequest(request);

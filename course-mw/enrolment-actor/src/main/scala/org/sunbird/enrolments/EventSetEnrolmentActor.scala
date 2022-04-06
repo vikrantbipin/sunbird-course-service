@@ -3,7 +3,6 @@ package org.sunbird.enrolments
 import akka.actor.ActorRef
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.sunbird.cache.util.RedisCacheUtil
-import org.sunbird.common.Common
 import org.sunbird.common.exception.ProjectCommonException
 import org.sunbird.common.models.util.ProjectUtil.{EnrolmentType, ProgressStatus}
 import org.sunbird.common.models.util._
@@ -68,7 +67,7 @@ class EventSetEnrolmentActor @Inject()(@Named("course-batch-notification-actor")
     val fixedBatchId: String = request.get(JsonKey.FIXED_BATCH_ID).asInstanceOf[String]
     val eventIds: util.List[String] = EventContentUtil.getChildEventIds(request, eventSetId)
     eventIds.foreach(eventId => {
-      val childBatchId = Common.formBatchIdForFixedBatchId(eventId, fixedBatchId)
+      val childBatchId = Util.formBatchIdForFixedBatchId(eventId, fixedBatchId)
       val batchData: CourseBatch = getBatch(request.getRequestContext, eventId, childBatchId, true)
       val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, eventId, childBatchId)
       validateEnrolment(batchData, enrolmentData, true)
@@ -88,7 +87,7 @@ class EventSetEnrolmentActor @Inject()(@Named("course-batch-notification-actor")
     val eventIds: util.List[String] = EventContentUtil.getChildEventIds(request, eventSetId)
 
     eventIds.foreach(eventId => {
-      val childBatchId = Common.formBatchIdForFixedBatchId(eventId, fixedBatchId)
+      val childBatchId = Util.formBatchIdForFixedBatchId(eventId, fixedBatchId)
       val batchData: CourseBatch = getBatch(request.getRequestContext, eventId, childBatchId, true)
       val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, eventId, childBatchId)
       validateEnrolment(batchData, enrolmentData, false)
