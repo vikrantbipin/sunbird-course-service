@@ -1,12 +1,17 @@
 package org.sunbird.learner.util;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.velocity.VelocityContext;
+import org.sunbird.common.Constants;
 import org.sunbird.common.models.util.JsonKey;
 import org.sunbird.common.models.util.LoggerUtil;
+import org.sunbird.common.models.util.ProjectUtil;
+import org.sunbird.common.models.util.mail.SendMail;
 import org.sunbird.common.request.Request;
 import org.sunbird.dto.SearchDTO;
 import org.sunbird.helper.CassandraConnectionManager;
 import org.sunbird.helper.CassandraConnectionMngrFactory;
+import org.sunbird.models.user.courses.UserDetails;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,7 +53,7 @@ public final class Util {
     dbInfoMap.put(
         JsonKey.LEARNER_COURSE_DB, getDbInfoObject(COURSE_KEY_SPACE_NAME, "user_enrolments"));
     dbInfoMap.put(
-        JsonKey.LEARNER_CONTENT_DB, getDbInfoObject(COURSE_KEY_SPACE_NAME, "user_content_consumption"));
+        JsonKey.LEARNER_CONTENT_DB, getDbInfoObject(COURSE_KEY_SPACE_NAME, "user_"));
     dbInfoMap.put(
         JsonKey.COURSE_MANAGEMENT_DB, getDbInfoObject(KEY_SPACE_NAME, "course_management"));
     dbInfoMap.put(JsonKey.COURSE_USER_ENROLMENTS_DB, getDbInfoObject(COURSE_KEY_SPACE_NAME, "user_enrolments"));
@@ -385,8 +390,9 @@ public final class Util {
         ? (String) actorMessage.getContext().get(key)
         : "";
   }
-
 }
+
+
 
 @FunctionalInterface
 interface ConvertValuesToLowerCase {

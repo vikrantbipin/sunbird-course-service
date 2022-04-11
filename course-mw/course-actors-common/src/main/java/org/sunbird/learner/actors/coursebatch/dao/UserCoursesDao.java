@@ -5,6 +5,7 @@ import java.util.Map;
 import org.sunbird.common.models.response.Response;
 import org.sunbird.common.request.RequestContext;
 import org.sunbird.models.user.courses.UserCourses;
+import org.sunbird.models.user.courses.UserDetails;
 
 public interface UserCoursesDao {
 
@@ -28,6 +29,8 @@ public interface UserCoursesDao {
   Response insert(RequestContext requestContext, Map<String, Object> userCoursesDetails);
 
   Response insertV2(RequestContext requestContext, Map<String, Object> userCoursesDetails);
+
+  Map<String, UserDetails> incompleteCourses();
 
   /**
    * Update user courses information

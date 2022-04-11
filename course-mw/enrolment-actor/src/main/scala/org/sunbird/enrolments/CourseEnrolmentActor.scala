@@ -6,9 +6,9 @@ import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalDateTime, LocalTime, ZoneId}
 import java.util
 import java.util.Date
-
 import akka.actor.ActorRef
 import com.fasterxml.jackson.databind.ObjectMapper
+
 import javax.inject.{Inject, Named}
 import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.apache.commons.lang3.StringUtils
@@ -23,7 +23,7 @@ import org.sunbird.learner.actors.coursebatch.dao.{CourseBatchDao, UserCoursesDa
 import org.sunbird.learner.actors.group.dao.impl.GroupDaoImpl
 import org.sunbird.learner.util.{ContentSearchUtil, ContentUtil, CourseBatchSchedulerUtil, JsonUtil, Util}
 import org.sunbird.models.course.batch.CourseBatch
-import org.sunbird.models.user.courses.UserCourses
+import org.sunbird.models.user.courses.{UserCourses, UserDetails}
 import org.sunbird.cache.util.RedisCacheUtil
 import org.sunbird.common.CassandraUtil
 import org.sunbird.telemetry.util.TelemetryUtil
@@ -68,10 +68,21 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             case "enrol" => enroll(request)
             case "unenrol" => unEnroll(request)
             case "listEnrol" => list(request)
+            case "userlistIncompleteCourses" => incompleteCourses(request)
             case _ => ProjectCommonException.throwClientErrorException(ResponseCode.invalidRequestData,
                 ResponseCode.invalidRequestData.getErrorMessage)
         }
     }
+
+    def incompleteCourses(request: Request): Unit = {
+            val activeEnrolments: java.util.Map[String, UserDetails] = userCoursesDao.incompleteCourses()
+            logger.info(request.getRequestContext, "CourseEnrolmentActor :: fetching all the users and the enrolled courses ");
+            val resp: Response = new Response()
+            resp.put(JsonKey.USER_DETAILS, activeEnrolments)
+            logger.info(request.getRequestContext, "CourseEnrolmentActor :: incompleteCourses :: " + resp)
+            sender().tell(resp, self)
+            //notifyUser(userId, batchData, JsonKey.ADD)
+        }
 
     def enroll(request: Request): Unit = {
         val courseId: String = request.get(JsonKey.COURSE_ID).asInstanceOf[String]

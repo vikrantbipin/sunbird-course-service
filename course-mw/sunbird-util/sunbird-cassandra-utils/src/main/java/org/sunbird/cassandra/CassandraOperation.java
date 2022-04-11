@@ -3,6 +3,9 @@ package org.sunbird.cassandra;
 
 import com.datastax.driver.core.ResultSet;
 import com.google.common.util.concurrent.FutureCallback;
+
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import org.sunbird.common.models.response.Response;
@@ -278,6 +281,12 @@ public interface CassandraOperation {
 
   public Response getRecordsWithLimit(
           RequestContext requestContext, String keyspace, String table, Map<String, Object> filters, List<String> fields, Integer limit);
+
+  Response searchByWhereClause(
+          String keyspace,
+          String tableName,
+          List<String> fields,
+          Date date);
 
   /**
    * Method to perform Logged batch insert operation.
