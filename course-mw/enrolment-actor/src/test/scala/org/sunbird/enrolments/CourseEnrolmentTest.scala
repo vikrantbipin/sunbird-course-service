@@ -192,7 +192,7 @@ class CourseEnrolmentTest extends FlatSpec with Matchers with MockFactory {
         enrolmentsList.get(0).put("lastContentAccessTime", new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ").parse("2021-12-24 08:20:15.875000+0000"))
         enrolmentsList.get(1).put("lastContentAccessTime", new Date())
         enrolmentsList.get(2).put("lastContentAccessTime", null)
-        (userDao.listEnrolments(_: RequestContext, _: String)).expects(*,*).returns(enrolmentsList)
+        (userDao.listEnrolments(_: RequestContext, _: String, null:java.util.List[String])).expects(*,*).returns(enrolmentsList)
         val response = callActor(getListEnrolRequest(), Props(new CourseEnrolmentActor(null)(cacheUtil).setDao(courseDao, userDao, groupDao)))
         println(response)
         assert(null != response)

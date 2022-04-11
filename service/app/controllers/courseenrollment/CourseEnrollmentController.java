@@ -7,9 +7,9 @@ import org.sunbird.common.models.util.ActorOperations;
 import org.sunbird.common.models.util.JsonKey;
 import org.sunbird.common.models.util.ProjectUtil;
 import org.sunbird.common.request.Request;
+import org.sunbird.learner.util.Util;
 import play.mvc.Http;
 import play.mvc.Result;
-import org.sunbird.common.Common;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -225,7 +225,7 @@ public class CourseEnrollmentController extends BaseController {
         return handleRequest(courseEnrolmentActor, "getParticipantsForFixedBatch",
                 httpRequest.body().asJson(),
                 (request) -> {
-                    Common.handleFixedBatchIdRequest((Request) request);
+                    Util.handleFixedBatchIdRequest((Request) request);
                     new CourseEnrollmentRequestValidator().validateCourseParticipant((Request) request);
                     return null;
                 },

@@ -3,7 +3,6 @@ package org.sunbird.learner.actors.event;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sunbird.actor.base.BaseActor;
-import org.sunbird.common.Common;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.response.Response;
 import org.sunbird.common.models.util.JsonKey;
@@ -11,6 +10,7 @@ import org.sunbird.common.request.Request;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.keys.SunbirdKey;
 import org.sunbird.learner.actors.coursebatch.service.UserCoursesService;
+import org.sunbird.learner.util.Util;
 
 import java.text.MessageFormat;
 import java.util.HashMap;
@@ -81,7 +81,7 @@ public class EventManagementActor extends BaseActor {
     private void validateNoEnrollments(Request request) {
         String identifier = request.get(SunbirdKey.IDENTIFIER).toString();
         String fixedBatchId = request.get(JsonKey.FIXED_BATCH_ID).toString();
-        String batchId = Common.formBatchIdForFixedBatchId(identifier, fixedBatchId);
+        String batchId = Util.formBatchIdForFixedBatchId(identifier, fixedBatchId);
         List<String> participants = userCoursesService.getParticipantsList(batchId, true, request.getRequestContext());
         if (!participants.isEmpty()) {
             ProjectCommonException.throwClientErrorException(

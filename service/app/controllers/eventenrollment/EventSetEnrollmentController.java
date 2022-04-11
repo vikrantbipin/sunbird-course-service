@@ -3,8 +3,8 @@ package controllers.eventenrollment;
 import akka.actor.ActorRef;
 import controllers.BaseController;
 import controllers.courseenrollment.validator.CourseEnrollmentRequestValidator;
-import org.sunbird.common.Common;
 import org.sunbird.common.request.Request;
+import org.sunbird.learner.util.Util;
 import play.mvc.Http;
 import play.mvc.Result;
 
@@ -23,7 +23,7 @@ public class EventSetEnrollmentController extends BaseController {
                 httpRequest.body().asJson(),
                 (request) -> {
                     Request req = (Request) request;
-                    Common.handleFixedBatchIdRequest(req);
+                    Util.handleFixedBatchIdRequest(req);
                     new CourseEnrollmentRequestValidator().validateEnrollCourse(req);
                     return null;
                 },
@@ -36,7 +36,7 @@ public class EventSetEnrollmentController extends BaseController {
                 httpRequest.body().asJson(),
                 (request) -> {
                     Request req = (Request) request;
-                    Common.handleFixedBatchIdRequest(req);
+                    Util.handleFixedBatchIdRequest(req);
                     new CourseEnrollmentRequestValidator().validateUnenrollCourse(req);
                     return null;
                 },

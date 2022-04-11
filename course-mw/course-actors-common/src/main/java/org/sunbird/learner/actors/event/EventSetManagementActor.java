@@ -5,7 +5,6 @@ import com.mashape.unirest.http.exceptions.UnirestException;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sunbird.actor.base.BaseActor;
-import org.sunbird.common.Common;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.response.Response;
 import org.sunbird.common.models.util.JsonKey;
@@ -13,6 +12,7 @@ import org.sunbird.common.request.Request;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.keys.SunbirdKey;
 import org.sunbird.learner.actors.coursebatch.service.UserCoursesService;
+import org.sunbird.learner.util.Util;
 
 import java.text.MessageFormat;
 import java.util.*;
@@ -125,7 +125,7 @@ public class EventSetManagementActor extends BaseActor {
         try {
             List<String> eventsIds = EventContentUtil.getChildEventIds(request, identifier);
             participants = eventsIds.stream().map(childId -> {
-                String childBatchId = Common.formBatchIdForFixedBatchId(childId, fixedBatchId);
+                String childBatchId = Util.formBatchIdForFixedBatchId(childId, fixedBatchId);
                 return userCoursesService.getParticipantsList(childBatchId, true, request.getRequestContext());
             })
                     .filter(Objects::nonNull)
