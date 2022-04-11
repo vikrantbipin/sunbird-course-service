@@ -379,7 +379,8 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
                 m.put(JsonKey.COLLECTION_ID, m.getOrDefault(JsonKey.COURSE_ID, ""))
                 jsonFields.foreach(field =>
                     if(fields.contains(field))
-                        m.put(field, m.getOrDefault(field,""))
+                        m.put(field, mapper.readTree(m.get(field).asInstanceOf[String]))
+//                        m.put(field, m.getOrDefault(field,""))
                 )
                 val formattedMap = JsonUtil.convertWithDateFormat(m, classOf[util.Map[String, Object]], dateFormatter)
                 if (fields.contains(JsonKey.ASSESSMENT_SCORE))
