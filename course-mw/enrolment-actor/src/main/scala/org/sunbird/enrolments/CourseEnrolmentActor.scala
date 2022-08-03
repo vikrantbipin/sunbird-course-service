@@ -79,6 +79,12 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val userId: String = request.get(JsonKey.USER_ID).asInstanceOf[String]
         val batchId: String = request.get(JsonKey.BATCH_ID).asInstanceOf[String]
         val batchData: CourseBatch = courseBatchDao.readById( courseId, batchId, request.getRequestContext)
+        import java.text.SimpleDateFormat
+        val format1 = new SimpleDateFormat("yyyy-MM-dd")
+        val startDateInNewFormat = format1.format(batchData.getStartDate);
+        batchData.setStartDate(format1.parse(startDateInNewFormat))
+        val endDateInNewFormat = format1.format(batchData.getEndDate);
+        batchData.setEndDate(format1.parse(endDateInNewFormat))
         val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, courseId, batchId)
         validateEnrolment(batchData, enrolmentData, true)
         val data: java.util.Map[String, AnyRef] = createUserEnrolmentMap(userId, courseId, batchId, enrolmentData, request.getContext.getOrDefault(JsonKey.REQUEST_ID, "").asInstanceOf[String])
