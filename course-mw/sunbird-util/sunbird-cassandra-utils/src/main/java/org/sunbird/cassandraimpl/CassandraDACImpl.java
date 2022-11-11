@@ -128,7 +128,7 @@ public class CassandraDACImpl extends CassandraOperationImpl {
     if (add) {
       update.with(QueryBuilder.put(column, key, value));
     } else {
-      update.with(QueryBuilder.remove(column, key));
+      update.with(QueryBuilder.put(column, key, null));
     }
     if (MapUtils.isEmpty(primaryKey)) {
       logger.error(requestContext, 
