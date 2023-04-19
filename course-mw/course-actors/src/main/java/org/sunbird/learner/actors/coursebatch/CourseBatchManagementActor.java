@@ -631,10 +631,11 @@ public class CourseBatchManagementActor extends BaseActor {
     String batchID = (String) request.get(JsonKey.BATCH_ID);
     logger.info(actorMessage.getRequestContext()," getParticipants  batchID :: " + batchID+" active :: "+ active + " actorMessage.getRequestContext() :: "+actorMessage.getRequestContext());
     List<String> participants = userCoursesService.getParticipantsList(batchID, active, actorMessage.getRequestContext());
-    logger.info(actorMessage.getRequestContext()," getParticipants  participants List For "+batchID+" :: " + participants+" and Participants size is :: "+participants.size()) ;
+
     if (CollectionUtils.isEmpty(participants)) {
       participants = new ArrayList<>();
     }
+    logger.info(actorMessage.getRequestContext()," getParticipants  participants List For "+batchID+" :: " + participants+" and Participants size is :: "+participants.size()) ;
     Response response = new Response();
     Map<String, Object> result = new HashMap<String, Object>();
     result.put(JsonKey.COUNT, participants.size());
