@@ -7,6 +7,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.sunbird.cassandra.CassandraOperation;
 import org.sunbird.common.models.response.Response;
 import org.sunbird.common.models.util.JsonKey;
+import org.sunbird.common.models.util.LoggerUtil;
 import org.sunbird.common.request.RequestContext;
 import org.sunbird.helper.ServiceFactory;
 import org.sunbird.learner.actors.coursebatch.dao.UserCoursesDao;
@@ -17,6 +18,8 @@ public class UserCoursesDaoImpl implements UserCoursesDao {
 
   private CassandraOperation cassandraOperation = ServiceFactory.getInstance();
   private ObjectMapper mapper = new ObjectMapper();
+
+  public LoggerUtil logger = new LoggerUtil(this.getClass());
   static UserCoursesDao userCoursesDao;
   private static final String KEYSPACE_NAME =
       Util.dbInfoMap.get(JsonKey.LEARNER_COURSE_DB).getKeySpace();
@@ -118,15 +121,18 @@ public class UserCoursesDaoImpl implements UserCoursesDao {
   public List<String> getBatchParticipants(RequestContext requestContext, String batchId, boolean active) {
     Map<String, Object> queryMap = new HashMap<>();
     queryMap.put(JsonKey.BATCH_ID, batchId);
+    logger.info(requestContext,"getBatchParticipants requestContext :: "+ requestContext +" batchId :: "+batchId +" active :: "+active);
     Response response =
             cassandraOperation.getRecordsByIndexedProperty(KEYSPACE_NAME, USER_ENROLMENTS, "batchid", batchId, requestContext);
         /*cassandraOperation.getRecords(
                 requestContext, KEYSPACE_NAME, USER_ENROLMENTS, queryMap, Arrays.asList(JsonKey.USER_ID, JsonKey.ACTIVE));*/
+    logger.info(requestContext,"getBatchParticipants BatchList response :: "+ response);
     List<Map<String, Object>> userCoursesList =
         (List<Map<String, Object>>) response.get(JsonKey.RESPONSE);
     if (CollectionUtils.isEmpty(userCoursesList)) {
       return null;
     }
+    logger.info(requestContext,"getBatchParticipants userCoursesList :: "+ userCoursesList);
     return userCoursesList
         .stream()
         .filter(userCourse -> (active == (boolean) userCourse.get(JsonKey.ACTIVE)))
