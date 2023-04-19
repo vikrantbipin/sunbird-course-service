@@ -129,10 +129,10 @@ public class UserCoursesDaoImpl implements UserCoursesDao {
     logger.info(requestContext,"getBatchParticipants BatchList response for batchId "+ batchId +" is :: "+ response);
     List<Map<String, Object>> userCoursesList =
         (List<Map<String, Object>>) response.get(JsonKey.RESPONSE);
+    logger.info(requestContext,"getBatchParticipants userCoursesList for batchId "+ batchId +" is :: "+ userCoursesList);
     if (CollectionUtils.isEmpty(userCoursesList)) {
       return null;
     }
-    logger.info(requestContext,"getBatchParticipants userCoursesList for batchId "+ batchId +" is :: "+ userCoursesList);
     return userCoursesList
         .stream()
         .filter(userCourse -> (active == (boolean) userCourse.get(JsonKey.ACTIVE)))
