@@ -126,13 +126,13 @@ public class UserCoursesDaoImpl implements UserCoursesDao {
             cassandraOperation.getRecordsByIndexedProperty(KEYSPACE_NAME, USER_ENROLMENTS, "batchid", batchId, requestContext);
         /*cassandraOperation.getRecords(
                 requestContext, KEYSPACE_NAME, USER_ENROLMENTS, queryMap, Arrays.asList(JsonKey.USER_ID, JsonKey.ACTIVE));*/
-    logger.info(requestContext,"getBatchParticipants BatchList response :: "+ response);
+    logger.info(requestContext,"getBatchParticipants BatchList response for batchId "+ batchId +" is :: "+ response);
     List<Map<String, Object>> userCoursesList =
         (List<Map<String, Object>>) response.get(JsonKey.RESPONSE);
     if (CollectionUtils.isEmpty(userCoursesList)) {
       return null;
     }
-    logger.info(requestContext,"getBatchParticipants userCoursesList :: "+ userCoursesList);
+    logger.info(requestContext,"getBatchParticipants userCoursesList for batchId "+ batchId +" is :: "+ userCoursesList);
     return userCoursesList
         .stream()
         .filter(userCourse -> (active == (boolean) userCourse.get(JsonKey.ACTIVE)))
