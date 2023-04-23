@@ -5,6 +5,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sunbird.actor.base.BaseActor;
+import org.sunbird.common.Constants;
 import org.sunbird.common.ElasticSearchHelper;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.factory.EsClientFactory;
@@ -624,21 +625,17 @@ public class CourseBatchManagementActor extends BaseActor {
   private void getParticipants(Request actorMessage) {
     Map<String, Object> request =
         (Map<String, Object>) actorMessage.getRequest().get(JsonKey.BATCH);
-    boolean active = true;
-    if (null != request.get(JsonKey.ACTIVE)) {
-      active = (boolean) request.get(JsonKey.ACTIVE);
+    if(null == request.get(JsonKey.ACTIVE)) {
+      request.put(JsonKey.ACTIVE, true);
     }
-    String batchID = (String) request.get(JsonKey.BATCH_ID);
-    List<String> participants = userCoursesService.getParticipantsList(batchID, active, actorMessage.getRequestContext());
-
-    if (CollectionUtils.isEmpty(participants)) {
-      participants = new ArrayList<>();
+    if(null == request.get(JsonKey.LIMIT)) {
+      request.put(JsonKey.LIMIT, Constants.DEFAULT_LIMIT);
     }
-
+    if(null == request.get(JsonKey.OFFSET)) {
+      request.put(JsonKey.OFFSET, 0);
+    }
+    Map<String, Object> result = userCoursesService.getParticipantsListByPage(actorMessage.getRequestContext(), request);
     Response response = new Response();
-    Map<String, Object> result = new HashMap<String, Object>();
-    result.put(JsonKey.COUNT, participants.size());
-    result.put(JsonKey.PARTICIPANTS, participants);
     response.put(JsonKey.BATCH, result);
     sender().tell(response, self());
   }
