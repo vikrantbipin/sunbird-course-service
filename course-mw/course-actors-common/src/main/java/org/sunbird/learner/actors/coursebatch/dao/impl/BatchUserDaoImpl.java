@@ -85,8 +85,7 @@ public class BatchUserDaoImpl implements BatchUserDao{
         primaryKey.put(JsonKey.USER_ID, userId);
         primaryKey.put(JsonKey.ENROLLED_DATE, map.get("enrolled_date"));
         Map<String, Object> attributeMap = new HashMap<>();
-        attributeMap.putAll(activeStatus);
-        attributeMap.remove(JsonKey.BATCH_ID);
+        attributeMap.put(JsonKey.ACTIVE, activeStatus.get(JsonKey.ACTIVE));
         attributeMap = CassandraUtil.changeCassandraColumnMapping(attributeMap);
         return cassandraOperation.updateRecord(
                 requestContext, KEYSPACE_NAME, ENROLLMENT_BATCH, attributeMap, primaryKey);
