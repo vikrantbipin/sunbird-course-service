@@ -197,4 +197,26 @@ public final class ContentUtil {
     }
     return JsonKey.SUCCESS.equalsIgnoreCase(response);
   }
+
+  public static boolean getContentRead(String courseId) {
+    Map<String, String> headers = new HashMap<>();
+    boolean flag = false;
+    try {
+      String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v3/read/" + courseId;
+      headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+      logger.info(null, "making call for content read ==" + courseId);
+      String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
+      logger.info(null, "Content read response", null, new HashMap<>() {{
+        put("response", response);
+      }});
+      Map<String, Object> data = mapper.readValue(response, Map.class);
+      if (data.get("responseCode").equals("OK")) {
+        logger.info(null, "inside if condition checking response code " + data);
+        flag = true;
+      }
+    } catch (Exception e) {
+      logger.error(null, "User don't have access to this courseId " + courseId, e);
+    }
+    return flag;
+  }
 }
