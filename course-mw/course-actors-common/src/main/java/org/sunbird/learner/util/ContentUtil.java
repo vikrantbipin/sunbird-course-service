@@ -202,7 +202,7 @@ public final class ContentUtil {
     Map<String, String> headers = new HashMap<>();
     boolean flag = false;
     try {
-      String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v3/read/" + courseId;
+      String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v1/read/" + courseId;
       headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
       logger.info(null, "making call for content read ==" + courseId);
       String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
