@@ -82,7 +82,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, courseId, batchId)
         validateEnrolment(batchData, enrolmentData, true)
         val data: java.util.Map[String, AnyRef] = createUserEnrolmentMap(userId, courseId, batchId, enrolmentData, request.getContext.getOrDefault(JsonKey.REQUEST_ID, "").asInstanceOf[String])
-        val hasAccess = ContentUtil.getContentRead(courseId, request)
+        val hasAccess = ContentUtil.getContentRead(courseId, request.getContext.getOrDefault(JsonKey.HEADER, new util.HashMap[String, String]).asInstanceOf[util.Map[String, String]])
         logger.info(null,"value of hasaccess "+hasAccess)
         if (hasAccess) {
             upsertEnrollment(userId, courseId, batchId, data, (null == enrolmentData), request.getRequestContext)
@@ -106,7 +106,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         getUpdatedStatus(enrolmentData)
         validateEnrolment(batchData, enrolmentData, false)
         val data: java.util.Map[String, AnyRef] = new java.util.HashMap[String, AnyRef]() {{ put(JsonKey.ACTIVE, ProjectUtil.ActiveStatus.INACTIVE.getValue.asInstanceOf[AnyRef]) }}
-        val hasAccess = ContentUtil.getContentRead(courseId, request)
+        val hasAccess = ContentUtil.getContentRead(courseId, request.getContext.getOrDefault(JsonKey.HEADER, new util.HashMap[String, String]).asInstanceOf[util.Map[String, String]])
         if (hasAccess) {
             upsertEnrollment(userId, courseId, batchId, data, false, request.getRequestContext)
             logger.info(request.getRequestContext, "CourseEnrolmentActor :: unEnroll :: Deleting redis for key " + getCacheKey(userId))
