@@ -198,12 +198,16 @@ public final class ContentUtil {
     return JsonKey.SUCCESS.equalsIgnoreCase(response);
   }
 
-  public static boolean getContentRead(String courseId, Map<String, String> headers) {
+  public static boolean getContentRead(String courseId, Map<String, String> allHeaders) {
     boolean flag = false;
     try {
+      Map<String, String> headers = new HashMap<String, String>();
+      if (allHeaders.containsKey(JsonKey.X_AUTH_USER_ORG_ID)) {
+        headers.put(JsonKey.X_AUTH_USER_ORG_ID, allHeaders.get(JsonKey.X_AUTHENTICATED_USER_TOKEN));
+      }
       String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v3/read/" + courseId;
       logger.info(null, "making call for content read ==" + courseId);
-      logger.info(null, "url "+baseContentreadUrl+" request "+headers);
+      logger.info(null, "url "+baseContentreadUrl+" headers "+headers);
       String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
       logger.info(null,"Content read response: " + Map.of("response", response));
       if (response != null && !response.isEmpty()) {
