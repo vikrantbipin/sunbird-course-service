@@ -207,13 +207,13 @@ public final class ContentUtil {
       logger.info(null, "making call for content read ==" + courseId);
       logger.info(null, "url "+baseContentreadUrl+" header "+headers);
       String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
-      logger.info(null, "Content read response", null, new HashMap<>() {{
-        put("response", response);
-      }});
-      Map<String, Object> data = mapper.readValue(response, Map.class);
-      if (data.get("responseCode").equals("OK")) {
-        logger.info(null, "inside if condition checking response code " + data);
-        flag = true;
+      logger.info(null,"Content read response: " + Map.of("response", response));
+      if (response != null && !response.isEmpty()) {
+        Map<String, Object> data = mapper.readValue(response, Map.class);
+        if (data.get("responseCode").equals("OK")) {
+          logger.info(null, "inside if condition checking response code " + data);
+          flag = true;
+        }
       }
     } catch (Exception e) {
       logger.error(null, "User don't have access to this courseId " + courseId, e);
