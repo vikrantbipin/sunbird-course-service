@@ -204,7 +204,7 @@ public final class ContentUtil {
     try {
       String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v3/read/" + courseId;
       logger.info(null, "making call for content read ==" + courseId);
-      logger.info(null, "url "+baseContentreadUrl+" header "+headers);
+      logger.info(null, "url "+baseContentreadUrl+" request "+request);
       String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
       logger.info(null,"Content read response: " + Map.of("response", response));
       if (response != null && !response.isEmpty()) {
