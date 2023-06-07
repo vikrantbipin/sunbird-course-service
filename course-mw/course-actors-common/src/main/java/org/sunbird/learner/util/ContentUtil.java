@@ -206,14 +206,10 @@ public final class ContentUtil {
         headers.put(JsonKey.X_AUTH_USER_ORG_ID, allHeaders.get(JsonKey.X_AUTH_USER_ORG_ID));
       }
       String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v3/read/" + courseId;
-      logger.info(null, "making call for content read ==" + courseId);
-      logger.info(null, "url "+baseContentreadUrl+" headers "+headers);
       String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
-      logger.info(null,"Content read response: " + Map.of("response", response));
       if (response != null && !response.isEmpty()) {
         Map<String, Object> data = mapper.readValue(response, Map.class);
-        if (data.get("responseCode").equals("OK")) {
-          logger.info(null, "inside if condition checking response code " + data);
+        if (JsonKey.OK.equalsIgnoreCase((String) data.get(JsonKey.RESPONSE_CODE))) {
           flag = true;
         }
       }
