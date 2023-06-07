@@ -203,7 +203,7 @@ public final class ContentUtil {
     try {
       Map<String, String> headers = new HashMap<String, String>();
       if (allHeaders.containsKey(JsonKey.X_AUTH_USER_ORG_ID)) {
-        headers.put(JsonKey.X_AUTH_USER_ORG_ID, allHeaders.get(JsonKey.X_AUTHENTICATED_USER_TOKEN));
+        headers.put(JsonKey.X_AUTH_USER_ORG_ID, allHeaders.get(JsonKey.X_AUTH_USER_ORG_ID));
       }
       String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v3/read/" + courseId;
       logger.info(null, "making call for content read ==" + courseId);
