@@ -65,4 +65,6 @@ public interface UserCoursesDao {
   
   
   List<Map<String, Object>> listEnrolments(RequestContext requestContext, String userId, List<String> courseIdList);
+
+  Map<String, Object> getBatchParticipantsByPage(RequestContext requestContext, Map<String, Object> request);
 }

@@ -290,4 +290,16 @@ public interface CassandraOperation {
    */
   Response batchInsertLogged(RequestContext requestContext, String keyspaceName, String tableName, List<Map<String, Object>> records);
 
+  /**
+   * Method to fetch records using pageId and limit.
+   * @param requestContext
+   * @param keyspaceName
+   * @param tableName
+   * @param key
+   * @param fields
+   * @param pageString
+   * @param limit
+   * @return
+   */
+  Response getRecordByIdentifierWithPage(RequestContext requestContext, String keyspaceName, String tableName, Object key, List<String> fields, String pageString, int limit);
 }

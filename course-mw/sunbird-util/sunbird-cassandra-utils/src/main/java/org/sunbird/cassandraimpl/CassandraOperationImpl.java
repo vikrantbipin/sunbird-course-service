@@ -4,7 +4,9 @@ import com.datastax.driver.core.BatchStatement;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Row;
 import com.datastax.driver.core.ConsistencyLevel;
+import com.datastax.driver.core.PagingState;
 import com.datastax.driver.core.WriteType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.Statement;
@@ -17,8 +19,12 @@ import com.datastax.driver.core.querybuilder.Select.Builder;
 import com.datastax.driver.core.querybuilder.Select.Where;
 import com.datastax.driver.core.querybuilder.Update.Assignments;
 import com.google.common.util.concurrent.FutureCallback;
+
+import net.logstash.logback.encoder.org.apache.commons.lang3.StringUtils;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -453,8 +459,8 @@ public abstract class CassandraOperationImpl implements CassandraOperation {
                   CassandraUtil.createQuery(x.getKey(), x.getValue(), selectWhere);
                 });
       }
-      logger.debug(requestContext, selectWhere.getQueryString());
-      ResultSet results = session.execute(selectWhere);
+      logger.debug(requestContext, selectQuery.getQueryString());
+      ResultSet results = session.execute(selectQuery);
       response = CassandraUtil.createResponse(results);
     } catch (Exception e) {
       logger.error(requestContext, Constants.EXCEPTION_MSG_FETCH + tableName + " : " + e.getMessage(), e);
@@ -774,6 +780,70 @@ public abstract class CassandraOperationImpl implements CassandraOperation {
     }
     logQueryElapseTime("batchInsertLogged", startTime);
     return response;
+  }
+
+  @Override
+  public Response getRecordByIdentifierWithPage(RequestContext requestContext, String keyspaceName, String tableName, 
+      Object key, List<String> fields, String pageString, int limit) {
+        long startTime = System.currentTimeMillis();
+        logger.debug(requestContext, "Cassandra Service getRecordBy key method started at ==" + startTime);
+        Response response = new Response();
+        try {
+          Session session = connectionManager.getSession(keyspaceName);
+          Builder selectBuilder;
+          if (CollectionUtils.isNotEmpty(fields)) {
+            selectBuilder = QueryBuilder.select(fields.toArray(new String[fields.size()]));
+          } else {
+            selectBuilder = QueryBuilder.select().all();
+          }
+          Select selectQuery = selectBuilder.from(keyspaceName, tableName);
+          Where selectWhere = selectQuery.where();
+          if (key instanceof String) {
+            selectWhere.and(eq(Constants.IDENTIFIER, key));
+          } else if (key instanceof Map) {
+            Map<String, Object> compositeKey = (Map<String, Object>) key;
+            compositeKey
+                .entrySet()
+                .stream()
+                .forEach(
+                    x -> {
+                      CassandraUtil.createQuery(x.getKey(), x.getValue(), selectWhere);
+                    });
+          }
+          if (StringUtils.isNotBlank(pageString)) {
+            logger.debug(requestContext, "paging State is not null... setting paging state...");
+            selectQuery.setPagingState(PagingState.fromString(pageString));
+          }
+          selectQuery.setFetchSize(limit);
+          ResultSet results = session.execute(selectQuery);
+          List<Map<String, Object>> responseList = new ArrayList<>();
+          Map<String, String> columnsMapping = CassandraUtil.fetchColumnsMapping(results);
+          int remaining = results.getAvailableWithoutFetching();
+          Iterator<Row> rowIterator = results.iterator();
+          while(rowIterator.hasNext()) {
+            Row row = rowIterator.next();
+            Map<String, Object> rowMap = new HashMap<>();
+            columnsMapping.entrySet().stream()
+                    .forEach(entry -> rowMap.put(entry.getKey(), row.getObject(entry.getValue())));
+            responseList.add(rowMap);
+            remaining--;
+            if (remaining == 0 || responseList.size() >= limit) {
+              break;
+            }
+          }
+          response.put(Constants.RESPONSE, responseList);
+          if (results.getExecutionInfo().getPagingState() != null) {
+            response.put(JsonKey.PAGE_ID, results.getExecutionInfo().getPagingState().toString());
+          }
+        } catch (Exception e) {
+          logger.error(requestContext, Constants.EXCEPTION_MSG_FETCH + tableName + " : " + e.getMessage(), e);
+          throw new ProjectCommonException(
+              ResponseCode.SERVER_ERROR.getErrorCode(),
+              ResponseCode.SERVER_ERROR.getErrorMessage(),
+              ResponseCode.SERVER_ERROR.getResponseCode());
+        }
+        logQueryElapseTime("getRecordByIdentifierWithPage", startTime);
+        return response;
   }
 
 }

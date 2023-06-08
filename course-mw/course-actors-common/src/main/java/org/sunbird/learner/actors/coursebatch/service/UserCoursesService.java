@@ -118,4 +118,8 @@ public class UserCoursesService {
   public List<String> getParticipantsList(String batchId, boolean active, RequestContext requestContext) {
     return userCourseDao.getBatchParticipants(requestContext, batchId, active);
   }
+
+  public Map<String, Object> getParticipantsListByPage(RequestContext requestContext, Map<String, Object> request) {
+    return userCourseDao.getBatchParticipantsByPage(requestContext, request);
+  }
 }
