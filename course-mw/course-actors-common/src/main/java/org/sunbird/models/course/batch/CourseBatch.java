@@ -43,6 +43,8 @@ public class CourseBatch implements Serializable {
   private Integer status;
 
   private Map<String, Object> certTemplates;
+  private Integer currentBatchSize;
+  private Map<String, Object> batchAttributes;
 
   public String getCourseCreator() {
     return courseCreator;
@@ -213,4 +215,21 @@ public class CourseBatch implements Serializable {
   public void setOldUpdatedDate(String updatedDate) {
     this.oldUpdatedDate = updatedDate;
   }
+
+  public Map<String, Object> getBatchAttributes() {
+    return batchAttributes;
+  }
+
+  public void setBatchAttributes(Map<String, Object> batchAttributes) {
+    this.batchAttributes = batchAttributes;
+  }
+
+  public Integer getCurrentBatchSize() {
+    return currentBatchSize;
+  }
+
+  public void setCurrentBatchSize(Integer currentBatchSize) {
+    this.currentBatchSize = currentBatchSize;
+  }
+
 }
