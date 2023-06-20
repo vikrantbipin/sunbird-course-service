@@ -118,22 +118,9 @@ public class CourseBatchManagementActor extends BaseActor {
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
     courseBatch.setBatchId(courseBatchId);
     if (primaryCategory.equalsIgnoreCase(JsonKey.PRIMARY_CATEGORY_BLENDED_PROGRAM) && courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE) != null) {
-      try {
-        int maxUsersInBatch = Integer.parseInt(PropertiesCache.getInstance().getProperty(JsonKey.MAX_USERS_IN_BATCH));
-        int currentBatchSize = Integer.parseInt((String) courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE));
-        if (maxUsersInBatch < currentBatchSize) {
-          ProjectCommonException.throwClientErrorException(
-                  ResponseCode.invalidCurrentBatchSize, ResponseCode.invalidCurrentBatchSize.getErrorMessage());
-        } else {
-          Map<String, Object> map = new HashMap<>();
-          map.put(JsonKey.CURRENT_BATCH_SIZE, currentBatchSize);
-          map.put(JsonKey.MAX_USERS_IN_BATCH, maxUsersInBatch);
-          courseBatch.setBatchAttributes(map);
-        }
-      } catch (NumberFormatException e) {
-        ProjectCommonException.throwClientErrorException(
-                ResponseCode.maxBatchSizeMissing, ResponseCode.maxBatchSizeMissing.getErrorMessage());
-      }
+      Map<String, Object> map = new HashMap<>();
+      map.put(JsonKey.CURRENT_BATCH_SIZE, courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE));
+      courseBatch.setBatchAttributes(map);
     } else if (primaryCategory.equalsIgnoreCase(JsonKey.PRIMARY_CATEGORY_BLENDED_PROGRAM) && courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE) == null) {
       ProjectCommonException.throwClientErrorException(
               ResponseCode.currentBatchSizeMissing, ResponseCode.currentBatchSizeMissing.getErrorMessage());
@@ -225,22 +212,9 @@ public class CourseBatchManagementActor extends BaseActor {
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
     String primaryCategory = (String) contentDetails.getOrDefault(JsonKey.PRIMARYCATEGORY, "");
     if (primaryCategory.equalsIgnoreCase(JsonKey.PRIMARY_CATEGORY_BLENDED_PROGRAM) && courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE) != null) {
-      try {
-        int maxUsersInBatch = Integer.parseInt(PropertiesCache.getInstance().getProperty(JsonKey.MAX_USERS_IN_BATCH));
-        int currentBatchSize = Integer.parseInt((String) courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE));
-        if (maxUsersInBatch < currentBatchSize) {
-          ProjectCommonException.throwClientErrorException(
-                  ResponseCode.invalidCurrentBatchSize, ResponseCode.invalidCurrentBatchSize.getErrorMessage());
-        } else {
-          Map<String, Object> map = new HashMap<>();
-          map.put(JsonKey.CURRENT_BATCH_SIZE, currentBatchSize);
-          map.put(JsonKey.MAX_USERS_IN_BATCH, maxUsersInBatch);
-          courseBatch.setBatchAttributes(map);
-        }
-      } catch (NumberFormatException e) {
-        ProjectCommonException.throwClientErrorException(
-                ResponseCode.maxBatchSizeMissing, ResponseCode.maxBatchSizeMissing.getErrorMessage());
-      }
+      Map<String, Object> map = new HashMap<>();
+      map.put(JsonKey.CURRENT_BATCH_SIZE, courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE));
+      courseBatch.setBatchAttributes(map);
     }
     participantsMap = getMentorLists(participantsMap, oldBatch, courseBatch);
     Map<String, Object> courseBatchMap = CourseBatchUtil.cassandraCourseMapping(courseBatch, dateFormat);
