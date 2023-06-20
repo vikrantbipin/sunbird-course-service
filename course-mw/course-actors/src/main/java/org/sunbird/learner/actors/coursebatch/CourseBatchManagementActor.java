@@ -657,17 +657,6 @@ public class CourseBatchManagementActor extends BaseActor {
                                       cert_template.getKey(), mapToObject((Map<String, Object>) cert_template.getValue())));
       courseBatch.setCertTemplates(certificateTemplates);
     }
-    Map<String, Object> batchAttributes = courseBatch.getBatchAttributes();
-    if(MapUtils.isNotEmpty(batchAttributes)) {
-      batchAttributes
-              .entrySet()
-              .stream()
-              .forEach(
-                      batchAttribute ->
-                              batchAttributes.put(
-                                      batchAttribute.getKey(), mapToObject((Map<String, Object>) batchAttribute.getValue())));
-      courseBatch.setBatchAttributes(batchAttributes);
-    }
     return courseBatch;
   }
 
@@ -707,6 +696,7 @@ public class CourseBatchManagementActor extends BaseActor {
     data.put("endDate", courseBatch.getOrDefault(JsonKey.END_DATE, null));
     data.put("enrollmentType", courseBatch.getOrDefault(JsonKey.ENROLLMENT_TYPE, ""));
     data.put("status", courseBatch.getOrDefault(JsonKey.STATUS, ""));
+    data.put("batchAttributes", courseBatch.getOrDefault(CourseJsonKey.BATCH_ATTRIBUTES, new HashMap<String, Object>()));
     data.put("enrollmentEndDate", getEnrollmentEndDate((String) courseBatch.getOrDefault(JsonKey.ENROLLMENT_END_DATE, null), (String) courseBatch.getOrDefault(JsonKey.END_DATE, null)));
     batches.removeIf(map -> StringUtils.equalsIgnoreCase((String) courseBatch.getOrDefault(JsonKey.BATCH_ID, ""), (String) map.get("batchId")));
     batches.add(data);
