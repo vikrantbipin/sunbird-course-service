@@ -148,6 +148,19 @@ public class CourseBatchCertificateActor extends BaseActor {
                                       cert_template.getKey(), mapToObject(cert_template.getValue())));
       courseBatch.put(CourseJsonKey.CERTIFICATE_TEMPLATES_COLUMN, certificateTemplates);
     }
+    Map<String, Map<String, Object>> batchAttributes =
+            (Map<String, Map<String, Object>>)
+                    courseBatch.getOrDefault(CourseJsonKey.BATCH_ATTRIBUTES, null);
+    if(MapUtils.isNotEmpty(batchAttributes)){
+      batchAttributes
+              .entrySet()
+              .stream()
+              .forEach(
+                      batchAttribute ->
+                              batchAttributes.put(
+                                      batchAttribute.getKey(), mapToObject(batchAttribute.getValue())));
+      courseBatch.put(CourseJsonKey.BATCH_ATTRIBUTES, batchAttributes);
+    }
     return courseBatch;
   }
 

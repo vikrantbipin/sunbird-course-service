@@ -116,6 +116,11 @@ public class CourseBatchManagementActor extends BaseActor {
     validateContentOrg(actorMessage.getRequestContext(), courseBatch.getCreatedFor());
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
     courseBatch.setBatchId(courseBatchId);
+    String primaryCategory = (String) contentDetails.getOrDefault(JsonKey.PRIMARYCATEGORY, "");
+    if (primaryCategory.equalsIgnoreCase(JsonKey.PRIMARY_CATEGORY_BLENDED_PROGRAM) && courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE) == null) {
+      ProjectCommonException.throwClientErrorException(
+              ResponseCode.currentBatchSizeMissing, ResponseCode.currentBatchSizeMissing.getErrorMessage());
+    }
     Response result = courseBatchDao.create(actorMessage.getRequestContext(), courseBatch);
     result.put(JsonKey.BATCH_ID, courseBatchId);
 
@@ -592,7 +597,7 @@ public class CourseBatchManagementActor extends BaseActor {
   }
 
   private Map<String, Object> getContentDetails(RequestContext requestContext, String courseId, Map<String, String> headers) {
-    Map<String, Object> ekStepContent = ContentUtil.getContent(courseId, Arrays.asList("status", "batches", "leafNodesCount"));
+    Map<String, Object> ekStepContent = ContentUtil.getContent(courseId, Arrays.asList("status", "batches", "leafNodesCount", "primaryCategory"));
     logger.info(requestContext, "CourseBatchManagementActor:getEkStepContent: courseId: " + courseId, null,
             ekStepContent);
     String status = (String) ((Map<String, Object>)ekStepContent.getOrDefault("content", new HashMap<>())).getOrDefault("status", "");
@@ -651,6 +656,17 @@ public class CourseBatchManagementActor extends BaseActor {
                               certificateTemplates.put(
                                       cert_template.getKey(), mapToObject((Map<String, Object>) cert_template.getValue())));
       courseBatch.setCertTemplates(certificateTemplates);
+    }
+    Map<String, Object> batchAttributes = courseBatch.getBatchAttributes();
+    if(MapUtils.isNotEmpty(batchAttributes)) {
+      batchAttributes
+              .entrySet()
+              .stream()
+              .forEach(
+                      batchAttribute ->
+                              batchAttributes.put(
+                                      batchAttribute.getKey(), mapToObject((Map<String, Object>) batchAttribute.getValue())));
+      courseBatch.setBatchAttributes(batchAttributes);
     }
     return courseBatch;
   }
