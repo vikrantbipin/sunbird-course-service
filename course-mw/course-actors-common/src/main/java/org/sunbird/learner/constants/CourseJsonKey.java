@@ -35,5 +35,4 @@ public abstract class CourseJsonKey {
   public static final String CERT_TEMPLATES = "certTemplates";
   public static final String ADDITIONAL_PROPS = "additionalProps";
   public static final String BATCH_ATTRIBUTES = "batchAttributes";
-  public static final String BATCH_ATTRIBUTES_COLUMN = "batchattributes";
 }

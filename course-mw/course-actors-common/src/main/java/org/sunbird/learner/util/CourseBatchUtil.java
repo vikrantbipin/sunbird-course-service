@@ -198,8 +198,6 @@ public class CourseBatchUtil {
         esCourseMap.put(key, null);
     });
     esCourseMap.put(CourseJsonKey.CERTIFICATE_TEMPLATES_COLUMN, courseBatch.getCertTemplates());
-    if (esCourseMap.containsKey(JsonKey.CURRENT_BATCH_SIZE))
-      esCourseMap.remove(JsonKey.CURRENT_BATCH_SIZE);
     return esCourseMap;
   }
 
@@ -212,8 +210,6 @@ public class CourseBatchUtil {
     Map<String, Object> courseBatchMap = mapper.convertValue(courseBatch, Map.class);
     changeInDateFormatAll.forEach(key -> {
       try {
-        if (courseBatchMap.containsKey(JsonKey.CURRENT_BATCH_SIZE))
-          courseBatchMap.remove(JsonKey.CURRENT_BATCH_SIZE);
         if (courseBatchMap.containsKey(key))
           courseBatchMap.put(key, setEndOfDay(key, dateTimeFormat.parse(dateTimeFormat.format(courseBatchMap.get(key))), dateFormat));
       } catch (ParseException e) {

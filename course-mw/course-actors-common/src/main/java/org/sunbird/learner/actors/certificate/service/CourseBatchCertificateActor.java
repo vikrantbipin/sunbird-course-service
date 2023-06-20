@@ -157,7 +157,7 @@ public class CourseBatchCertificateActor extends BaseActor {
                       batchAttribute ->
                               batchAttributes.put(
                                       batchAttribute.getKey(), mapToObject(batchAttribute.getValue())));
-      courseBatch.put(CourseJsonKey.BATCH_ATTRIBUTES_COLUMN, batchAttributes);
+      courseBatch.put(CourseJsonKey.BATCH_ATTRIBUTES, batchAttributes);
     }
     return courseBatch;
   }
