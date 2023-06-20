@@ -207,11 +207,6 @@ public class CourseBatchManagementActor extends BaseActor {
     validateContentOrg(actorMessage.getRequestContext(), courseBatch.getCreatedFor());
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
     String primaryCategory = (String) contentDetails.getOrDefault(JsonKey.PRIMARYCATEGORY, "");
-    if (primaryCategory.equalsIgnoreCase(JsonKey.PRIMARY_CATEGORY_BLENDED_PROGRAM) && courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE) != null) {
-      Map<String, Object> map = new HashMap<>();
-      map.put(JsonKey.CURRENT_BATCH_SIZE, courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE));
-      courseBatch.setBatchAttributes(map);
-    }
     participantsMap = getMentorLists(participantsMap, oldBatch, courseBatch);
     Map<String, Object> courseBatchMap = CourseBatchUtil.cassandraCourseMapping(courseBatch, dateFormat);
     Response result =
