@@ -38,15 +38,7 @@ import javax.inject.Inject;
 import javax.inject.Named;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.sunbird.common.models.util.JsonKey.ID;
@@ -205,6 +197,7 @@ public class CourseBatchManagementActor extends BaseActor {
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
     participantsMap = getMentorLists(participantsMap, oldBatch, courseBatch);
     Map<String, Object> courseBatchMap = CourseBatchUtil.cassandraCourseMapping(courseBatch, dateFormat);
+    logger.info(actorMessage.getRequestContext(),"Course map :"+courseBatchMap);
     Response result =
         courseBatchDao.update(actorMessage.getRequestContext(), (String) request.get(JsonKey.COURSE_ID), batchId, courseBatchMap);
     CourseBatch updatedCourseObject = mapESFieldsToObject(courseBatch);
@@ -268,6 +261,10 @@ public class CourseBatchManagementActor extends BaseActor {
 
     if (request.containsKey(JsonKey.MENTORS))
       courseBatch.setMentors((List<String>) request.get(JsonKey.MENTORS));
+
+    if (request.containsKey(JsonKey.STATUS))
+      courseBatch.setStatus((Integer) request.get(JsonKey.STATUS));
+     logger.info(requestContext,"courseBatch :"+ courseBatch);
 
     updateCourseBatchDate(requestContext, courseBatch, request);
 
@@ -400,9 +397,10 @@ public class CourseBatchManagementActor extends BaseActor {
                 || (null != requestedEndDate && null == dbBatchEndDate && todayDate.compareTo(requestedEndDate) <= 0) 
                 || (null != requestedEndDate && null != dbBatchEndDate && requestedEndDate.compareTo(dbBatchEndDate) >=0));
     
-    if(batchStarted)
+    if(batchStarted && !req.containsKey(JsonKey.STATUS))
       courseBatch.setStatus(ProgressStatus.STARTED.getValue());
-    
+
+    logger.info(requestContext,"courseBatch after updation :"+ courseBatch);
     validateBatchEnrollmentEndDate(
         dbBatchStartDate,
         dbBatchEndDate,
