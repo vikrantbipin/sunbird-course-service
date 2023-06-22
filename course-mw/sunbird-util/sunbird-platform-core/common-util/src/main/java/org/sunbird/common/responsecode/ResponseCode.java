@@ -833,6 +833,7 @@ public enum ResponseCode {
           ResponseMessage.Key.CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS,
           ResponseMessage.Message.CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS),
 
+
   currentBatchSizeInvalid(
           ResponseMessage.Key.CURRENT_BATCH_SIZE_INVALID,
           ResponseMessage.Message.CURRENT_BATCH_SIZE_PARAMETER),
