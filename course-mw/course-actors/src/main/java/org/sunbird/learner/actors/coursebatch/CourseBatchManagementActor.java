@@ -117,9 +117,9 @@ public class CourseBatchManagementActor extends BaseActor {
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
     courseBatch.setBatchId(courseBatchId);
     String primaryCategory = (String) contentDetails.getOrDefault(JsonKey.PRIMARYCATEGORY, "");
-    if (JsonKey.PRIMARY_CATEGORY_BLENDED_PROGRAM.equalsIgnoreCase(primaryCategory) && courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE) == null) {
+    if (JsonKey.PRIMARY_CATEGORY_BLENDED_PROGRAM.equalsIgnoreCase(primaryCategory) && (courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE) == null || Integer.parseInt((String) courseBatch.getBatchAttributes().get(JsonKey.CURRENT_BATCH_SIZE)) < 1)) {
       ProjectCommonException.throwClientErrorException(
-              ResponseCode.currentBatchSizeMissing, ResponseCode.currentBatchSizeMissing.getErrorMessage());
+              ResponseCode.currentBatchSizeInvalid, ResponseCode.currentBatchSizeInvalid.getErrorMessage());
     }
     Response result = courseBatchDao.create(actorMessage.getRequestContext(), courseBatch);
     result.put(JsonKey.BATCH_ID, courseBatchId);
