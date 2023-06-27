@@ -34,19 +34,24 @@ public class CourseBatchController extends BaseController {
   private ActorRef compositeSearchActorRef;
 
   public CompletionStage<Result> createBatch(Http.Request httpRequest) {
-    return handleRequest(
-        courseBatchActorRef,
-        ActorOperations.CREATE_BATCH.getValue(),
-        httpRequest.body().asJson(),
-        (request) -> {
-          Request req = (Request) request;
-          String courseId = req.getRequest().containsKey(JsonKey.COURSE_ID) ? JsonKey.COURSE_ID : JsonKey.COLLECTION_ID;
-          req.getRequest().put(JsonKey.COURSE_ID, req.getRequest().get(courseId));
-          new CourseBatchRequestValidator().validateCreateCourseBatchRequest(req);
-          return null;
-        },
-        getAllRequestHeaders(httpRequest),
-        httpRequest);
+      try {
+          return handleRequest(
+                  courseBatchActorRef,
+                  ActorOperations.CREATE_BATCH.getValue(),
+                  httpRequest.body().asJson(),
+                  (request) -> {
+                      Request req = (Request) request;
+                      String courseId = req.getRequest().containsKey(JsonKey.COURSE_ID) ? JsonKey.COURSE_ID : JsonKey.COLLECTION_ID;
+                      req.getRequest().put(JsonKey.COURSE_ID, req.getRequest().get(courseId));
+                      new CourseBatchRequestValidator().validateCreateCourseBatchRequest(req);
+                      return null;
+                  },
+                  getAllRequestHeaders(httpRequest),
+                  httpRequest);
+      }
+      catch (Exception e) {
+          return CompletableFuture.completedFuture(createCommonExceptionResponse(e, httpRequest));
+      }
   }
 
   public CompletionStage<Result> privateCreateBatch(Http.Request httpRequest) {
