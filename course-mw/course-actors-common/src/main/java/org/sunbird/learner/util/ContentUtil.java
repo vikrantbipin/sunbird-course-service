@@ -138,10 +138,7 @@ public final class ContentUtil {
       headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
       headers.put(JsonKey.AUTHORIZATION, PropertiesCache.getInstance().getProperty(JsonKey.EKSTEP_AUTHORIZATION));
       if (incomingHeaders.containsKey(JsonKey.X_AUTH_USER_ORG_ID)) {
-        logger.info(null, "X-Auth-User-OrgId added into outgoing request.");
         headers.put(JsonKey.X_AUTH_USER_ORG_ID, incomingHeaders.get(JsonKey.X_AUTH_USER_ORG_ID));
-      } else {
-        logger.info(null, "X-Auth-User-OrgId doesn't exist in incoming request.");
       }
 
       logger.info(null, "making call for content read ==" + courseId);
