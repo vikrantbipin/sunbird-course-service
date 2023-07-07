@@ -832,6 +832,11 @@ public enum ResponseCode {
   cannotUpdateEventSetHavingEnrollments(
           ResponseMessage.Key.CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS,
           ResponseMessage.Message.CANNOT_UPDATE_EVENT_SET_HAVING_ENROLLMENTS),
+
+  currentBatchSizeInvalid(
+          ResponseMessage.Key.CURRENT_BATCH_SIZE_INVALID,
+          ResponseMessage.Message.CURRENT_BATCH_SIZE_PARAMETER),
+
   accessDeniedToEnrolOrUnenrolCourse(ResponseMessage.Key.USER_DOES_NOT_HAVE_ACCESS,ResponseMessage.Message.USER_DOES_NOT_HAVE_ACCESS),
   OK(200),
   CLIENT_ERROR(400),
