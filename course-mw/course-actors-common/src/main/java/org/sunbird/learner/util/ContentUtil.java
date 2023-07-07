@@ -124,14 +124,22 @@ public final class ContentUtil {
         "BaseMetricsActor:makePostRequest: Response from analytics store for metrics", null, new HashMap<>(){{put("result", result);}});
     return result;
   }
+
   public static Map<String, Object> getContent(String courseId, List<String> fields) {
+    return getContent(courseId, fields, new HashMap<String, String>());
+  }
+
+  public static Map<String, Object> getContent(String courseId, List<String> fields, HashMap<String, String> incomingHeaders) {
     Map<String, Object> resMap = new HashMap<>();
     Map<String, String> headers = new HashMap<>();
     try {
       String fieldsStr = StringUtils.join(fields, ",");
-      String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v3/read/" + courseId + "?fields=" + fieldsStr;
+      String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v1/read/" + courseId + "?fields=" + fieldsStr;
       headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
       headers.put(JsonKey.AUTHORIZATION, PropertiesCache.getInstance().getProperty(JsonKey.EKSTEP_AUTHORIZATION));
+      if (incomingHeaders.containsKey(JsonKey.X_AUTH_USER_ORG_ID)) {
+        headers.put(JsonKey.X_AUTH_USER_ORG_ID, incomingHeaders.get(JsonKey.X_AUTH_USER_ORG_ID));
+      }
 
       logger.info(null, "making call for content read ==" + courseId);
       String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
