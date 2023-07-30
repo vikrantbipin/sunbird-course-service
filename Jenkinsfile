@@ -35,7 +35,7 @@ node('build-slave') {
 
                 stage('Package') {
                     dir('service') {
-                        sh 'mvn play2:dist'
+                        sh '/var/jenkins_home/maven/bin/mvn play2:dist'
                     }
                     sh('chmod 777 ./build.sh')
                     sh("./build.sh ${build_tag} ${env.NODE_NAME} ${hub_org}")
