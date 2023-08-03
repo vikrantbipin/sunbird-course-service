@@ -168,6 +168,7 @@ public class CourseBatchManagementActor extends BaseActor {
 
   @SuppressWarnings("unchecked")
   private void updateCourseBatch(Request actorMessage) throws Exception {
+    logger.info(actorMessage.getRequestContext(),"Inside updateCourseBatch");
     Map<String, Object> targetObject = null;
     Map<String, Object> participantsMap = new HashMap<>();
 
@@ -195,6 +196,7 @@ public class CourseBatchManagementActor extends BaseActor {
     if(StringUtils.isBlank(courseBatch.getCreatedBy()))
       courseBatch.setCreatedBy(requestedBy);
     validateUserPermission(courseBatch, requestedBy);
+    logger.info(actorMessage.getRequestContext(),"completed validateUserPermission");
     validateContentOrg(actorMessage.getRequestContext(), courseBatch.getCreatedFor());
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
     participantsMap = getMentorLists(participantsMap, oldBatch, courseBatch);
