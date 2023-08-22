@@ -24,7 +24,8 @@ import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.response.Response;
 import org.sunbird.common.models.util.*;
 import org.sunbird.common.responsecode.ResponseCode;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 /**
  * @desc This class will provide all required helper method for cassandra db operation.
  * @author Amit Kumar
@@ -346,5 +347,13 @@ public final class CassandraUtil {
     Map<String, Object> newMap = new HashMap<>();
     map.entrySet().forEach(entry -> newMap.put(propertiesCache.readPropertyValue(entry.getKey()), entry.getValue()));
     return newMap;
+  }
+
+  public static void convertMaptoJsonString(Map<String, Object> map, String field) {
+    try {
+      map.put(field, (new ObjectMapper()).writeValueAsString(map.get(field)));
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
+    }
   }
 }
