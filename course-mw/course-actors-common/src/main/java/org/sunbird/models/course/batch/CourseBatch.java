@@ -45,6 +45,27 @@ public class CourseBatch implements Serializable {
   private Map<String, Object> certTemplates;
   private Map<String, Object> batchAttributes;
 
+  private String batchLocationDetails;
+
+  private Boolean enableQR;
+
+  public String getBatchLocationDetails() {
+    return batchLocationDetails;
+  }
+
+  public void setBatchLocationDetails(String batchLocationDetails) {
+    this.batchLocationDetails = batchLocationDetails;
+  }
+
+  public Boolean getEnableQR() {
+    return enableQR;
+  }
+
+  public void setEnableQR(Boolean enableQR) {
+    this.enableQR = enableQR;
+  }
+
+
   public String getCourseCreator() {
     return courseCreator;
   }
