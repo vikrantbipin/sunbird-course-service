@@ -32,8 +32,8 @@ public class CourseBatchDaoImpl implements CourseBatchDao {
   @Override
   public Response create(RequestContext requestContext, CourseBatch courseBatch) {
     Map<String, Object> map = CourseBatchUtil.cassandraCourseMapping(courseBatch, dateFormat);
-    map = CassandraUtil.changeCassandraColumnMapping(map);
     CassandraUtil.convertMaptoJsonString(map,"batchAttributes");
+    map = CassandraUtil.changeCassandraColumnMapping(map);
     return cassandraOperation.insertRecord(
             requestContext, courseBatchDb.getKeySpace(), courseBatchDb.getTableName(), map);
   }
