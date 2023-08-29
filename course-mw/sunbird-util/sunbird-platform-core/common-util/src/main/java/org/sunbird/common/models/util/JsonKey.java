@@ -1081,5 +1081,10 @@ public final class JsonKey {
   public static final String CURRENT_BATCH_SIZE = "currentBatchSize";
   public static final String PRIMARYCATEGORY = "primaryCategory";
   public static final String PRIMARY_CATEGORY_BLENDED_PROGRAM = "Blended Program";
+
+  public static final String BATCH_ENABLE_QR = "enableQR";
+
+  public static final String BATCH_LOCATION_DETAILS = "batchLocationDetails";
+
   private JsonKey() {}
 }
