@@ -701,6 +701,8 @@ public class CourseBatchManagementActor extends BaseActor {
     data.put("status", courseBatch.getOrDefault(JsonKey.STATUS, ""));
     data.put("batchAttributes", courseBatch.getOrDefault(CourseJsonKey.BATCH_ATTRIBUTES, new HashMap<String, Object>()));
     data.put("enrollmentEndDate", getEnrollmentEndDate((String) courseBatch.getOrDefault(JsonKey.ENROLLMENT_END_DATE, null), (String) courseBatch.getOrDefault(JsonKey.END_DATE, null)));
+    data.put("enableQR", courseBatch.getOrDefault(JsonKey.BATCH_ENABLE_QR, null));
+    data.put("batchLocationDetails", courseBatch.getOrDefault(JsonKey.BATCH_LOCATION_DETAILS, null));
     batches.removeIf(map -> StringUtils.equalsIgnoreCase((String) courseBatch.getOrDefault(JsonKey.BATCH_ID, ""), (String) map.get("batchId")));
     batches.add(data);
     ContentUtil.updateCollection(requestContext, (String) courseBatch.getOrDefault(JsonKey.COURSE_ID, ""), new HashMap<String, Object>() {{ put("batches", batches);}});
