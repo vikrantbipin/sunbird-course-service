@@ -1086,6 +1086,17 @@ public final class JsonKey {
   public static final String IS_ADMIN_API = "isAdminAPI";
   public static final String RETIRED_COURE_ENABLED = "retiredCoursesEnabled";
   public static final String FALSE = "false";
-    
+  public static final String PROGRAM_ID = "programId";
+  public static final String PROGRAM_ENROLL_ALLOWED_PRIMARY_CATEGORY = "program_enroll_allowed_primary_category";
+  public static final String PROGRAM_ENROLL_ALLOWED_CHILDREN_PRIMARY_CATEGORY = "program_enroll_allowed_children_primary_category";
+  public static final String CONTENT_HIERARCHY_STORE_KEY_SPACE_NAME = "content_hierarchy_store_key_space_name";
+  public static final String CONTENT_HIERARCHY_STORE_DB = "content_hierarchy";
+  public static final String PROGRAM_ENROLL_RESTRICTED_CHILDREN_PRIMARY_CATEGORY = "program_enroll_restricted_children_primary_category";
+
+  public static final String BLENDED_PROGRAM= "Blended Program";
+  public static final String PROGRAM= "Program";
+  public static final String CURATED_PROGRAM= "Curated Program";
+  public static final String PARENT_COLLECTIONS= "parentCollections";
+  public static final String ADMIN_PROGRAM_ENROLL_ALLOWED_PRIMARY_CATEGORY = "admin_program_enroll_allowed_primary_category";
   private JsonKey() {}
 }
