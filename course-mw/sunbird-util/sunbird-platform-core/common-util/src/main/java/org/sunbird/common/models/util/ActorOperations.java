@@ -59,6 +59,7 @@ public enum ActorOperations {
   UNBLOCK_USER("unblockUser"),
   CREATE_BATCH("createBatch"),
   UPDATE_BATCH("updateBatch"),
+  UPDATE_START_BATCHES_STATUS("updateStartBatchesStatus"),
   REMOVE_BATCH("removeBatch"),
   ADD_USER_TO_BATCH("addUserBatch"),
   REMOVE_USER_FROM_BATCH("removeUserFromBatch"),
