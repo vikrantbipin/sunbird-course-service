@@ -64,4 +64,5 @@ public interface Constants {
   public static final String GT = ">";
   public static final String ID = "id";
   public static final Integer DEFAULT_LIMIT = 250;
+  public static final String DATE_FORMAT="yyyy-MM-dd";
 }

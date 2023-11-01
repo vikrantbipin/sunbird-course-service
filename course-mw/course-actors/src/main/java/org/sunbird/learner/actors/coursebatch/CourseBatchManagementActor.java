@@ -1,9 +1,18 @@
 package org.sunbird.learner.actors.coursebatch;
 
 import akka.actor.ActorRef;
+import akka.dispatch.Mapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mashape.unirest.http.HttpResponse;
+import com.mashape.unirest.http.JsonNode;
+import com.mashape.unirest.http.Unirest;
+import com.mashape.unirest.request.BaseRequest;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHeaders;
+import org.json.JSONObject;
 import org.sunbird.actor.base.BaseActor;
 import org.sunbird.common.Constants;
 import org.sunbird.common.ElasticSearchHelper;
@@ -11,20 +20,18 @@ import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.factory.EsClientFactory;
 import org.sunbird.common.inf.ElasticSearchService;
 import org.sunbird.common.models.response.Response;
-import org.sunbird.common.models.util.ActorOperations;
-import org.sunbird.common.models.util.JsonKey;
-import org.sunbird.common.models.util.ProjectUtil;
+import org.sunbird.common.models.util.*;
 import org.sunbird.common.models.util.ProjectUtil.ProgressStatus;
-import org.sunbird.common.models.util.PropertiesCache;
-import org.sunbird.common.models.util.TelemetryEnvKey;
 import org.sunbird.common.request.Request;
 import org.sunbird.common.request.RequestContext;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.common.util.JsonUtil;
+import org.sunbird.dto.SearchDTO;
 import org.sunbird.learner.actors.coursebatch.dao.CourseBatchDao;
 import org.sunbird.learner.actors.coursebatch.dao.impl.CourseBatchDaoImpl;
 import org.sunbird.learner.actors.coursebatch.service.UserCoursesService;
 import org.sunbird.learner.constants.CourseJsonKey;
+import org.sunbird.learner.util.ContentSearchUtil;
 import org.sunbird.learner.util.ContentUtil;
 import org.sunbird.learner.util.CourseBatchUtil;
 import org.sunbird.learner.util.Util;
@@ -36,8 +43,10 @@ import scala.concurrent.Future;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import javax.ws.rs.core.MediaType;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -77,13 +86,16 @@ public class CourseBatchManagementActor extends BaseActor {
         createCourseBatch(request);
         break;
       case "updateBatch":
-        updateCourseBatch(request);
+        updateCourseBatch(request,false);
         break;
       case "getBatch":
         getCourseBatch(request);
         break;
       case "getParticipants":
         getParticipants(request);
+        break;
+      case "updateStartBatchesStatus":
+        updateStartBatchesStatus(request);
         break;
       default:
         onReceiveUnsupportedOperation(request.getOperation());
@@ -184,7 +196,7 @@ public class CourseBatchManagementActor extends BaseActor {
   }
 
   @SuppressWarnings("unchecked")
-  private void updateCourseBatch(Request actorMessage) throws Exception {
+  private void updateCourseBatch(Request actorMessage,boolean isPrivateCall) throws Exception {
     Map<String, Object> targetObject = null;
     Map<String, Object> participantsMap = new HashMap<>();
 
@@ -206,13 +218,14 @@ public class CourseBatchManagementActor extends BaseActor {
             : (String) request.get(JsonKey.ID);
     CourseBatch oldBatch =
         courseBatchDao.readById((String) request.get(JsonKey.COURSE_ID), batchId, actorMessage.getRequestContext());
-    CourseBatch courseBatch = getUpdateCourseBatch(actorMessage.getRequestContext(), request, oldBatch);
+    CourseBatch courseBatch = getUpdateCourseBatch(actorMessage.getRequestContext(), request, oldBatch,isPrivateCall);
     courseBatch.setUpdatedDate(ProjectUtil.getTimeStamp());
     Map<String, Object> contentDetails = getContentDetails(actorMessage.getRequestContext(),courseBatch.getCourseId(), headers);
+    if(!isPrivateCall){
     validateUserPermission(courseBatch, requestedBy);
     validateContentOrg(actorMessage.getRequestContext(), courseBatch.getCreatedFor());
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
-    participantsMap = getMentorLists(participantsMap, oldBatch, courseBatch);
+    participantsMap = getMentorLists(participantsMap, oldBatch, courseBatch); }
     Map<String, Object> courseBatchMap = CourseBatchUtil.cassandraCourseMapping(courseBatch, dateFormat);
     Response result =
         courseBatchDao.update(actorMessage.getRequestContext(), (String) request.get(JsonKey.COURSE_ID), batchId, courseBatchMap);
@@ -259,7 +272,7 @@ public class CourseBatchManagementActor extends BaseActor {
   }
 
   @SuppressWarnings("unchecked")
-  private CourseBatch getUpdateCourseBatch(RequestContext requestContext, Map<String, Object> request, CourseBatch oldBatch) throws Exception {
+  private CourseBatch getUpdateCourseBatch(RequestContext requestContext, Map<String, Object> request, CourseBatch oldBatch,boolean isPrivateCall) throws Exception {
     CourseBatch courseBatch = JsonUtil.deserialize(JsonUtil.serialize(oldBatch), CourseBatch.class);
     courseBatch.setEnrollmentType(
         getEnrollmentType(
@@ -281,7 +294,7 @@ public class CourseBatchManagementActor extends BaseActor {
     if (request.containsKey(CourseJsonKey.BATCH_ATTRIBUTES))
       courseBatch.setBatchAttributes((Map<String, Object>) request.get(CourseJsonKey.BATCH_ATTRIBUTES));
 
-    updateCourseBatchDate(requestContext, courseBatch, request);
+    updateCourseBatchDate(requestContext, courseBatch, request,isPrivateCall);
 
     return courseBatch;
   }
@@ -382,7 +395,7 @@ public class CourseBatchManagementActor extends BaseActor {
   }
 
   @SuppressWarnings("unchecked")
-  private void updateCourseBatchDate(RequestContext requestContext, CourseBatch courseBatch, Map<String, Object> req) throws Exception {
+  private void updateCourseBatchDate(RequestContext requestContext, CourseBatch courseBatch, Map<String, Object> req,boolean isPrivateCall) throws Exception {
     Map<String, Object> courseBatchMap = CourseBatchUtil.cassandraCourseMapping(courseBatch, dateFormat);
     Date todayDate = getDate(requestContext, null, null);
     Date dbBatchStartDate = getDate(requestContext, JsonKey.START_DATE, courseBatchMap);
@@ -397,10 +410,11 @@ public class CourseBatchManagementActor extends BaseActor {
     dbBatchEndDate = dbBatchEndDate == null ? getDate(requestContext, JsonKey.OLD_END_DATE, courseBatchMap) : dbBatchEndDate;
     dbEnrollmentEndDate = dbEnrollmentEndDate == null ? getDate(requestContext, JsonKey.OLD_ENROLLMENT_END_DATE, courseBatchMap) : dbEnrollmentEndDate;
 
-    validateUpdateBatchStartDate(requestedStartDate);
-    validateBatchStartAndEndDate(
-        dbBatchStartDate, dbBatchEndDate, requestedStartDate, requestedEndDate, todayDate);
-    
+    if(!isPrivateCall) {
+      validateUpdateBatchStartDate(requestedStartDate);
+      validateBatchStartAndEndDate(
+              dbBatchStartDate, dbBatchEndDate, requestedStartDate, requestedEndDate, todayDate);
+    }
     /* Update the batch to In-Progress for below conditions
     * 1. StartDate is greater than or equal to today's date
     * 2. EndDate can be either NULL or 
@@ -414,7 +428,7 @@ public class CourseBatchManagementActor extends BaseActor {
     
     if(batchStarted)
       courseBatch.setStatus(ProgressStatus.STARTED.getValue());
-    
+    if(!isPrivateCall) {
     validateBatchEnrollmentEndDate(
         dbBatchStartDate,
         dbBatchEndDate,
@@ -422,7 +436,7 @@ public class CourseBatchManagementActor extends BaseActor {
         requestedStartDate,
         requestedEndDate,
         requestedEnrollmentEndDate,
-        todayDate);
+        todayDate); }
     courseBatch.setStartDate( 
             null != requestedStartDate
                     ? requestedStartDate
@@ -730,4 +744,45 @@ public class CourseBatchManagementActor extends BaseActor {
                     .getProperty(JsonKey.COURSE_BATCH_ENROLL_END_DATE_LESS));
   }
 
+  private void updateStartBatchesStatus(Request actorMessage){
+
+    //Construct Search DTO
+    SearchDTO dto = new SearchDTO();
+    Map<String, Object> filterMap = new HashMap<>();
+    HashMap<String,String> val = new HashMap<String,String>();
+    val.put(Constants.LTE,new SimpleDateFormat(Constants.DATE_FORMAT).format(new Date()));
+    filterMap.put(JsonKey.START_DATE,val);
+    filterMap.put(JsonKey.STATUS,0);
+    dto.getAdditionalProperties().put(JsonKey.FILTERS, filterMap);
+    Future future = esService.search(actorMessage.getRequestContext(), dto, ProjectUtil.EsType.courseBatch.getTypeName());
+    HashMap<String,Object> res = (HashMap<String,Object> )ElasticSearchHelper.getResponseFromFuture(future);
+    if(res == null){
+      logger.info(actorMessage.getRequestContext(),"No batches to update status");
+      return;
+    }
+    ArrayList<HashMap<String,Object>> contents = (ArrayList<HashMap<String,Object>>) res.get(JsonKey.CONTENT);
+    if(contents == null){
+      logger.info(actorMessage.getRequestContext(),"No batches to update status");
+      return;
+    }
+    //Headers
+    HashMap<String,String> headers = new HashMap<>();
+    headers.put( HttpHeaders.AUTHORIZATION, JsonKey.BEARER + System.getenv(JsonKey.SUNBIRD_AUTHORIZATION));
+    headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+    headers.put("Connection", "Keep-Alive");
+    for(HashMap<String, Object> content:contents){
+      String identifier = (String)content.get(JsonKey.IDENTIFIER);
+      content.put(JsonKey.ID,identifier);
+      content.remove(JsonKey.IDENTIFIER);
+      Request  updateRequest =  new Request();
+      updateRequest.getContext().put(JsonKey.HEADER,headers);
+      updateRequest.setRequest(content);
+      try {
+        updateCourseBatch(updateRequest,true);
+        logger.info(actorMessage.getRequestContext(),"Batch status updated for batchId :"+identifier);
+      } catch (Exception e) {
+        logger.error(actorMessage.getRequestContext(),"Error while updating batch "+identifier,e);
+      }
+    }
+  }
 }
