@@ -582,6 +582,7 @@ public class CourseBatchManagementActor extends BaseActor {
       Date requestedEnrollmentEndDate,
       Date todayDate) {
     Date endDate = requestedEndDate != null ? requestedEndDate : existingEndDate;
+    logger.info(new RequestContext(),"value of enrollment date validation eneabled : "+ enrolmentDateValidationEnabled());
     if (enrolmentDateValidationEnabled() && requestedEnrollmentEndDate != null
         && (requestedEnrollmentEndDate.before(requestedStartDate))) {
       throw new ProjectCommonException(
