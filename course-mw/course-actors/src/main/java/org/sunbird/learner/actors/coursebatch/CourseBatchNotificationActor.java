@@ -197,9 +197,11 @@ public class CourseBatchNotificationActor extends BaseActor {
   }
 
   private void courseBatchDatesUpdateNotification(Request request) throws UnirestException {
+    RequestContext requestContext = request.getRequestContext();
+    logger.info(requestContext,"Entered CourseBatchNotificationActor :: courseBatchDatesUpdateNotification Request Recieved : " + request);
     CourseBatch oldCourseBatch = (CourseBatch) request.getRequest().get("oldCourseBatch");
     CourseBatch updatedCourseBatch = (CourseBatch) request.getRequest().get("updatedCourseBatch");
-    RequestContext context = (RequestContext) request.getRequest().get("requestContext");
+
     Map<String, Object> requestBody = (Map<String, Object>) request.getRequest().get("requestBody");
     Map<String, Object> batchAttributes = (Map<String, Object>) requestBody.get("batchAttributes");
     List<String> mentorsIds = (List<String>) requestBody.get("mentors");
@@ -214,13 +216,14 @@ public class CourseBatchNotificationActor extends BaseActor {
         }
       }
     }
-    List<BatchUser> batchUsers = batchUserDao.readById(context, updatedCourseBatch.getBatchId());
+    List<BatchUser> batchUsers = batchUserDao.readById(requestContext, updatedCourseBatch.getBatchId());
     List<String> batchUserIdList = batchUsers.stream().filter(e -> e.getActive()).map(user -> user.getUserId()).collect(Collectors.toList());
     reciepientList.addAll(batchUserIdList);
-    sendEmailNotificationMailForBatchDatesUpdate(reciepientList, oldCourseBatch, updatedCourseBatch);
+    logger.info(requestContext,"Recieved ActiveUsers from enrollment_batch_lookup : " + batchUserIdList);
+    sendEmailNotificationMailForBatchDatesUpdate(requestContext,reciepientList, oldCourseBatch, updatedCourseBatch);
   }
 
-  private void sendEmailNotificationMailForBatchDatesUpdate(List<String> reciepientList, CourseBatch oldBatch, CourseBatch updatedBatch) {
+  private void sendEmailNotificationMailForBatchDatesUpdate(RequestContext requestContext,List<String> reciepientList, CourseBatch oldBatch, CourseBatch updatedBatch) {
     Map<String, Object> request = new HashMap<>();
     request.put(Constants.COURSE_NAME, updatedBatch.getName());
     request.put(Constants.BATCH_NAME, updatedBatch.getDescription());
@@ -244,6 +247,7 @@ public class CourseBatchNotificationActor extends BaseActor {
       requeststr = mapper.writeValueAsString(requestBody);
       url.append(getLearnerHost()).append(getLearnerPath());
       httpResponse = Unirest.post(String.valueOf(url)).headers(headers).body(requeststr).asString();
+      logger.info(requestContext, "Notification sent successfully, response is : " + httpResponse);
       if (httpResponse != null && !ResponseCode.OK.equals(httpResponse.getStatus())) {
         throw new RuntimeException("An error occured while sending mail notification");
       }
