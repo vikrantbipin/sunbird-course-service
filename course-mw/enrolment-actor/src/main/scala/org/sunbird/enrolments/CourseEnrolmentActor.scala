@@ -80,7 +80,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val courseId: String = request.get(JsonKey.COURSE_ID).asInstanceOf[String]
         val userId: String = request.get(JsonKey.USER_ID).asInstanceOf[String]
         val batchId: String = request.get(JsonKey.BATCH_ID).asInstanceOf[String]
-        logger.info(request.asInstanceOf[Request].getRequestContext, "Request for enroll recieved, UserId : " + userId + ", courseId : " + courseId +", batchId : "+batchId)
+        logger.info(request.asInstanceOf[Request].getRequestContext, "CourseEnrolmentActor Request for enroll recieved, UserId : " + userId + ", courseId : " + courseId +", batchId : "+batchId)
         val batchData: CourseBatch = courseBatchDao.readById( courseId, batchId, request.getRequestContext)
         val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, courseId, batchId)
         val batchUserData: BatchUser = batchUserDao.read(request.getRequestContext, batchId, userId)
@@ -104,7 +104,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val courseId: String = request.get(JsonKey.COURSE_ID).asInstanceOf[String]
         val userId: String = request.get(JsonKey.USER_ID).asInstanceOf[String]
         val batchId: String = request.get(JsonKey.BATCH_ID).asInstanceOf[String]
-        logger.info(request.asInstanceOf[Request].getRequestContext, "Request for un-enroll recieved, UserId : " + userId + ", courseId : " + courseId +", batchId : "+batchId)
+        logger.info(request.asInstanceOf[Request].getRequestContext, "CourseEnrolmentActor Request for un-enroll recieved, UserId : " + userId + ", courseId : " + courseId +", batchId : "+batchId)
         val batchData: CourseBatch = courseBatchDao.readById(courseId, batchId, request.getRequestContext)
         val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, courseId, batchId)
         val batchUserData: BatchUser = batchUserDao.read(request.getRequestContext, batchId, userId)

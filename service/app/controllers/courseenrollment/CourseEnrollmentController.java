@@ -108,7 +108,7 @@ public class CourseEnrollmentController extends BaseController {
           req.getRequest().put(JsonKey.COURSE_ID, req.getRequest().get(courseId));
           String userId = (String) req.getContext().getOrDefault(JsonKey.REQUESTED_FOR, req.getContext().get(JsonKey.REQUESTED_BY));
           validator.validateRequestedBy(userId);
-          logger.info( ((Request) request).getRequestContext(), "Request for enroll recieved, UserId : "+  userId +", courseId : "+courseId + ", batchId:"+batchId);
+          logger.info( ((Request) request).getRequestContext(), " CourseEnrollmentController : Request for enroll recieved, UserId : "+  userId +", courseId : "+courseId + ", batchId:"+batchId);
           req.getRequest().put(JsonKey.USER_ID, userId);
           validator.validateEnrollCourse(req);
           return null;
@@ -129,7 +129,7 @@ public class CourseEnrollmentController extends BaseController {
             req.getRequest().put(JsonKey.COURSE_ID, req.getRequest().get(courseId));
           String userId = (String) req.getContext().getOrDefault(JsonKey.REQUESTED_FOR, req.getContext().get(JsonKey.REQUESTED_BY));
           validator.validateRequestedBy(userId);
-          logger.info( ((Request) request).getRequestContext(), "Request for un-enroll recieved, UserId : "+  userId +", courseId : "+courseId+ ", batchId:"+batchId);
+          logger.info( ((Request) request).getRequestContext(), " CourseEnrollmentController : Request for un-enroll recieved, UserId : "+  userId +", courseId : "+courseId+ ", batchId:"+batchId);
           req.getRequest().put(JsonKey.USER_ID, userId);
           validator.validateUnenrollCourse(req);
           return null;
