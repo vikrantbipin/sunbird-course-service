@@ -49,6 +49,7 @@ import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -248,6 +249,9 @@ public class CourseBatchManagementActor extends BaseActor {
     updateCollection(actorMessage.getRequestContext(), esCourseMap, contentDetails);
     if (courseNotificationActive()) {
       batchOperationNotifier(actorMessage, courseBatch, participantsMap);
+    }
+    if (batchDatesUpdateNotificationActive()) {
+      batchDatesUpdateNotifier(actorMessage, courseBatch, oldBatch);
     }
   }
 
@@ -582,6 +586,7 @@ public class CourseBatchManagementActor extends BaseActor {
       Date requestedEnrollmentEndDate,
       Date todayDate) {
     Date endDate = requestedEndDate != null ? requestedEndDate : existingEndDate;
+    logger.info(new RequestContext(),"value of enrollment date validation eneabled : "+ enrolmentDateValidationEnabled());
     if (enrolmentDateValidationEnabled() && requestedEnrollmentEndDate != null
         && (requestedEnrollmentEndDate.before(requestedStartDate))) {
       throw new ProjectCommonException(
@@ -767,6 +772,7 @@ public class CourseBatchManagementActor extends BaseActor {
     HashMap<String,String> startDate = new HashMap<String,String>();
     startDate.put(Constants.EQUAL, date);
     filterMap.put(JsonKey.START_DATE,startDate);
+
     filterMap.put(JsonKey.STATUS,0);
     dto.getAdditionalProperties().put(JsonKey.FILTERS, filterMap);
     Future future = esService.search(actorMessage.getRequestContext(), dto, ProjectUtil.EsType.courseBatch.getTypeName());
@@ -809,5 +815,23 @@ public class CourseBatchManagementActor extends BaseActor {
     } catch (ParseException e) {
       return false;
     }
+
+  private void batchDatesUpdateNotifier(Request actorMessage, CourseBatch updatedCourseBatch, CourseBatch oldCourseBatch) {
+    Request batchNotification = new Request(actorMessage.getRequestContext());
+    batchNotification.getContext().putAll(actorMessage.getContext());
+    batchNotification.setOperation(ActorOperations.COURSE_BATCH_DATE_NOTIFICATION.getValue());
+    Map<String, Object> request = new HashMap<>();
+    request.put(Constants.OLD_COURSE_BATCH, oldCourseBatch);
+    request.put(Constants.UPDATED_COURSE_BATCH, updatedCourseBatch);
+    request.put(Constants.REQUEST_CONTEXT, actorMessage.getRequestContext());
+    request.put(Constants.REQUEST_CONTEXT, actorMessage.getRequest());
+    batchNotification.setRequest(request);
+    courseBatchNotificationActorRef.tell(batchNotification, getSelf());
+  }
+
+  private boolean batchDatesUpdateNotificationActive() {
+    return Boolean.parseBoolean(
+            PropertiesCache.getInstance()
+                    .getProperty(JsonKey.SUNBIRD_BATCH_UPDATE_NOTIFICATIONS_ENABLED));
   }
 }
