@@ -134,6 +134,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def list(request: Request): Unit = {
         val userId = request.get(JsonKey.USER_ID).asInstanceOf[String]
+        logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR LIST API STARTED "+userId)
         val urlQueryString = request.getContext.get(JsonKey.URL_QUERY_STRING).asInstanceOf[String]
         val paramMap = urlQueryString
           .split("&")
@@ -144,8 +145,10 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val courseIdList = request.get(JsonKey.COURSE_IDS).asInstanceOf[java.util.List[String]]
         logger.info(request.getRequestContext,"CourseEnrolmentActor :: list :: UserId = " + userId)
         try{
+            logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR BEFORE CALLING getEnolmentList "+userId)
             val response = if (isCacheEnabled && request.getContext.get("cache").asInstanceOf[Boolean])
                 getCachedEnrolmentList(userId, () => getEnrolmentList(request, userId, courseIdList)) else getEnrolmentList(request, userId, courseIdList)
+            logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR After getEnolmentList Completion "+userId)
             sender().tell(response, self)
         }catch {
             case e: Exception =>
@@ -384,10 +387,15 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def getEnrolmentList(request: Request, userId: String, courseIdList: java.util.List[String]): Response = {
         logger.info(request.getRequestContext,"CourseEnrolmentActor :: getCachedEnrolmentList :: fetching data from cassandra with userId " + userId)
+        logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR Before getActiveEnrollments "+userId)
         val activeEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getActiveEnrollments( userId, courseIdList, request.getRequestContext)
+        logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR After getActiveEnrollments Completion "+userId)
+        logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR Before enrolments collected "+userId)
         val enrolments: java.util.List[java.util.Map[String, AnyRef]] = {
             if (CollectionUtils.isNotEmpty(activeEnrolments)) {
-              val allCourseIds: java.util.List[String] = activeEnrolments.map(e => e.getOrDefault(JsonKey.COURSE_ID, "").asInstanceOf[String]).distinct.filter(id => StringUtils.isNotBlank(id)).toList.asJava
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR Before allCourseIds "+userId)
+                val allCourseIds: java.util.List[String] = activeEnrolments.map(e => e.getOrDefault(JsonKey.COURSE_ID, "").asInstanceOf[String]).distinct.filter(id => StringUtils.isNotBlank(id)).toList.asJava
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR After allCourseIds "+userId)
                 val courseIds = new java.util.ArrayList[String]()
                 val secureCourseIds = new java.util.ArrayList[String]()
                 for (courseId <- allCourseIds.asScala) {
@@ -398,22 +406,32 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                     }
                 }
                 val allEnrolledCourses = new java.util.ArrayList[java.util.Map[String, AnyRef]]
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR Before addCourseDetails for couseIds "+userId)
                 val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails(activeEnrolments, courseIds, request, false)
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR After addCourseDetails for couseIds "+userId)
                 if (enrolmentList != null) {
                     allEnrolledCourses.addAll(enrolmentList)
                 }
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR Before addCourseDetails for secureCourseIds "+userId)
                 val secureCourseEnrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails(activeEnrolments, secureCourseIds, request, true)
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR After addCourseDetails for secureCourseIds "+userId)
                 if (secureCourseEnrolmentList != null) {
                     allEnrolledCourses.addAll(secureCourseEnrolmentList)
                 }
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR Before updateProgressData "+userId)
                 val updatedEnrolmentList = updateProgressData(allEnrolledCourses, userId, allCourseIds, request.getRequestContext)
-                addBatchDetails(updatedEnrolmentList, request)
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR After updateProgressData "+userId)
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR Before addBatchDetails "+userId)
+                val  btchDetails = addBatchDetails(updatedEnrolmentList, request)
+                logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR After addBatchDetails "+userId)
+                btchDetails
             } else new java.util.ArrayList[java.util.Map[String, AnyRef]]()
         }
         val resp: Response = new Response()
         val sortedEnrolment = enrolments.filter(ae => ae.get("lastContentAccessTime")!=null).toList.sortBy(_.get("lastContentAccessTime").asInstanceOf[Date])(Ordering[Date].reverse).toList
         val finalEnrolments = sortedEnrolment ++ enrolments.asScala.filter(e => e.get("lastContentAccessTime")==null).toList
         resp.put(JsonKey.COURSES, finalEnrolments.asJava)
+        logger.info(request.getRequestContext, "TROUBLE-SHOOTING ACTOR returning from getEnrolmentList  ")
         resp
     }
     // TODO: to be removed once all are in scala.
