@@ -413,6 +413,8 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val resp: Response = new Response()
         val sortedEnrolment = enrolments.filter(ae => ae.get("lastContentAccessTime")!=null).toList.sortBy(_.get("lastContentAccessTime").asInstanceOf[Date])(Ordering[Date].reverse).toList
         val finalEnrolments = sortedEnrolment ++ enrolments.asScala.filter(e => e.get("lastContentAccessTime")==null).toList
+        val userCourseEnrolmentInfo = getUserEnrolmentCourseInfo(finalEnrolments)
+        resp.put(JsonKey.USER_COURSE_ENROLMENT_INFO, userCourseEnrolmentInfo)
         resp.put(JsonKey.COURSES, finalEnrolments.asJava)
         resp
     }
@@ -556,6 +558,30 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 ProjectCommonException.throwClientErrorException(ResponseCode.accessDeniedToEnrolOrUnenrolCourse, request.get(JsonKey.COURSE_ID).asInstanceOf[String]);
         }
         false;
+    }
+
+    def getUserEnrolmentCourseInfo(finalEnrolment: List[util.Map[String, AnyRef]]) = {
+        var certificateIssued: Int = 0
+        var coursesInProgress: Int = 0
+        var hoursSpentOnCompletedCourses: Int = 0
+        finalEnrolment.foreach(courseDetails => {
+            val courseStatus = courseDetails.get(JsonKey.STATUS)
+            if (courseStatus != 2) {
+                coursesInProgress += 1
+            } else {
+                val courseContent: java.util.HashMap[String, AnyRef] = courseDetails.get(JsonKey.CONTENT).asInstanceOf[java.util.HashMap[String, AnyRef]]
+                val hoursSpentOnCourses: Int = courseContent.get(JsonKey.DURATION).asInstanceOf[String].toInt
+                hoursSpentOnCompletedCourses += hoursSpentOnCourses
+                val certificatesIssue: java.util.ArrayList[util.Map[String, AnyRef]] = courseDetails.get(JsonKey.ISSUED_CERTIFICATES).asInstanceOf[java.util.ArrayList[util.Map[String, AnyRef]]]
+                if (certificatesIssue.nonEmpty)
+                    certificateIssued += 1
+            }
+        });
+        val enrolmentCourseDetails = new util.HashMap[String, Int]()
+        enrolmentCourseDetails.put(JsonKey.TIME_SPENT_ON_COMPLETED_COURSES, hoursSpentOnCompletedCourses)
+        enrolmentCourseDetails.put(JsonKey.CERITFICATES_ISSUED, certificateIssued)
+        enrolmentCourseDetails.put(JsonKey.COURSES_IN_PROGRESS, coursesInProgress)
+        enrolmentCourseDetails
     }
 }
 
