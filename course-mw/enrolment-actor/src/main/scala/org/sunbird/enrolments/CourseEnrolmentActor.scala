@@ -174,7 +174,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val requestBody: String =  prepareSearchRequest(courseIds, request, flag)
         logger.info(request.getRequestContext, "TroubleShooting Composite Search request body "+requestBody)
         val searchResult:java.util.Map[String, AnyRef] = ContentSearchUtil.searchContentSync(request.getRequestContext, request.getContext.getOrDefault(JsonKey.URL_QUERY_STRING,"").asInstanceOf[String], requestBody, request.getContext.getOrDefault(JsonKey.HEADER, new util.HashMap[String, String]).asInstanceOf[util.Map[String, String]])
-        logger.info(request.getRequestContext, "TroubleShooting Composite Search response "+requestBody)
+        logger.info(request.getRequestContext, "TroubleShooting Composite Search response "+searchResult)
         val coursesList: java.util.List[java.util.Map[String, AnyRef]] = searchResult.getOrDefault(JsonKey.CONTENTS, new java.util.ArrayList[java.util.Map[String, AnyRef]]()).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
         val coursesMap = {
             if(CollectionUtils.isNotEmpty(coursesList)) {
