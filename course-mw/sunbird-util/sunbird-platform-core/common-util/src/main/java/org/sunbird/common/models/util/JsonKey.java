@@ -1105,5 +1105,10 @@ public final class JsonKey {
   public static final String REGARDS = "regards";
   public static final String SUNBIRD_BATCH_DATE_UPDATE_NOTIFICATIONS_SUBJECT = "sunbird_batch_date_update_notifications_subject" ;
   public static final String LMS_SEND_EMAIL_NOTIFICATION_PATH = "lms.send.email.notification";
+  public static final String USER_COURSE_ENROLMENT_INFO = "userCourseEnrolmentInfo";
+  public static final String ISSUED_CERTIFICATES = "issuedCertificates";
+  public static final String TIME_SPENT_ON_COMPLETED_COURSES = "timeSpentOnCompletedCourses";
+  public static final String CERITFICATES_ISSUED = "certificatesIssued";
+  public static final String COURSES_IN_PROGRESS = "coursesInProgress";
   private JsonKey() {}
 }
