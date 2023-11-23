@@ -46,6 +46,8 @@ import javax.inject.Named;
 import javax.ws.rs.core.MediaType;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -749,7 +751,6 @@ public class CourseBatchManagementActor extends BaseActor {
     //Construct Search DTO
     SearchDTO dto = new SearchDTO();
     Map<String, Object> filterMap = new HashMap<>();
-
     ZonedDateTime istDateTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.DATE_FORMAT);
     String tdy = istDateTime.format(formatter);
@@ -760,7 +761,6 @@ public class CourseBatchManagementActor extends BaseActor {
     endDate.put(Constants.GTE, tdy);
     filterMap.put(JsonKey.START_DATE,startDate);
     filterMap.put(JsonKey.END_DATE,endDate);
-
     filterMap.put(JsonKey.STATUS,0);
     dto.getAdditionalProperties().put(JsonKey.FILTERS, filterMap);
     Future future = esService.search(actorMessage.getRequestContext(), dto, ProjectUtil.EsType.courseBatch.getTypeName());
