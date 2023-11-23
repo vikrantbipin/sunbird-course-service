@@ -749,9 +749,18 @@ public class CourseBatchManagementActor extends BaseActor {
     //Construct Search DTO
     SearchDTO dto = new SearchDTO();
     Map<String, Object> filterMap = new HashMap<>();
-    HashMap<String,String> val = new HashMap<String,String>();
-    val.put(Constants.LTE,new SimpleDateFormat(Constants.DATE_FORMAT).format(new Date()));
-    filterMap.put(JsonKey.START_DATE,val);
+
+    ZonedDateTime istDateTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.DATE_FORMAT);
+    String tdy = istDateTime.format(formatter);
+    logger.info(actorMessage.getRequestContext(),"Current IST Time: " + tdy);
+    HashMap<String,String> startDate = new HashMap<String,String>();
+    HashMap<String,String> endDate = new HashMap<String,String>();
+    startDate.put(Constants.LTE, tdy);
+    endDate.put(Constants.GTE, tdy);
+    filterMap.put(JsonKey.START_DATE,startDate);
+    filterMap.put(JsonKey.END_DATE,endDate);
+
     filterMap.put(JsonKey.STATUS,0);
     dto.getAdditionalProperties().put(JsonKey.FILTERS, filterMap);
     Future future = esService.search(actorMessage.getRequestContext(), dto, ProjectUtil.EsType.courseBatch.getTypeName());
