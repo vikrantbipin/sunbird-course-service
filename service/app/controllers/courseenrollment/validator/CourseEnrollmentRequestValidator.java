@@ -13,9 +13,6 @@ public class CourseEnrollmentRequestValidator extends BaseRequestValidator {
     commonValidations(courseRequestDto);
   }
 
-  public void validateEnrollProgram(Request programRequestDto) {
-    commonValidationsProgram(programRequestDto);
-  }
   public void validateUnenrollCourse(Request courseRequestDto) {
     commonValidations(courseRequestDto);
   }
@@ -62,20 +59,5 @@ public class CourseEnrollmentRequestValidator extends BaseRequestValidator {
             (String) courseRequestDto.getRequest().get(JsonKey.BATCH_ID),
             ResponseCode.mandatoryParamsMissing,
             JsonKey.BATCH_ID+"/"+JsonKey.FIXED_BATCH_ID);
-  }
-
-  private void commonValidationsProgram(Request programRequestDto) {
-    validateParam(
-            (String) programRequestDto.getRequest().get(JsonKey.PROGRAM_ID),
-            ResponseCode.mandatoryParamsMissing,
-            JsonKey.PROGRAM_ID+"/"+JsonKey.COLLECTION_ID);
-    validateParam(
-            (String) programRequestDto.getRequest().get(JsonKey.BATCH_ID),
-            ResponseCode.mandatoryParamsMissing,
-            JsonKey.BATCH_ID);
-    validateParam(
-            (String) programRequestDto.getRequest().get(JsonKey.USER_ID),
-            ResponseCode.mandatoryParamsMissing,
-            JsonKey.USER_ID);
   }
 }

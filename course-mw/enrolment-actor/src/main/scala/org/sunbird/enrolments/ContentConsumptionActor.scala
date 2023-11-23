@@ -2,8 +2,8 @@ package org.sunbird.enrolments
 
 import java.util
 import java.util.{Date, TimeZone, UUID}
-import com.fasterxml.jackson.databind.ObjectMapper
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import javax.inject.Inject
 import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.apache.commons.lang3.StringUtils
@@ -18,11 +18,10 @@ import org.sunbird.common.util.JsonUtil
 import org.sunbird.helper.ServiceFactory
 import org.sunbird.kafka.client.{InstructionEventGenerator, KafkaClient}
 import org.sunbird.learner.constants.{CourseJsonKey, InstructionEvent}
-import org.sunbird.learner.util.{ContentUtil, Util}
+import org.sunbird.learner.util.Util
 
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
-import scala.language.postfixOps
 
 case class InternalContentConsumption(courseId: String, batchId: String, contentId: String) {
   def validConsumption() = StringUtils.isNotBlank(courseId) && StringUtils.isNotBlank(batchId) && StringUtils.isNotBlank(contentId)
@@ -78,7 +77,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
             } else contentList
             logger.info(requestContext, "Final content-consumption data: " + finalContentList)
             // Update consumption first and then push the assessment events if there are any. This will help us handling failures of max attempts (for assessment content).
-            val contentConsumptionResponse = processContents(finalContentList, requestContext, requestBy, requestedFor,request)
+            val contentConsumptionResponse = processContents(finalContentList, requestContext, requestBy, requestedFor)
             val assessmentResponse = processAssessments(assessmentEvents, requestContext, requestBy, requestedFor)
             val finalResponse = assessmentResponse.getOrElse(new Response())
             finalResponse.putAll(contentConsumptionResponse.getOrElse(new Response()).getResult)
@@ -151,7 +150,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
         } else None
     }
 
-    def processContents(contentList: java.util.List[java.util.Map[String, AnyRef]], requestContext: RequestContext, requestedBy: String, requestedFor: String,request: Request): Option[Response] = {
+    def processContents(contentList: java.util.List[java.util.Map[String, AnyRef]], requestContext: RequestContext, requestedBy: String, requestedFor: String): Option[Response] = {
         if(CollectionUtils.isNotEmpty(contentList)) {
             val batchContentList: Map[String, List[java.util.Map[String, AnyRef]]] = contentList.filter(event => StringUtils.isNotBlank(event.getOrDefault(JsonKey.BATCH_ID, "").asInstanceOf[String])).toList.groupBy(event => event.get(JsonKey.BATCH_ID).asInstanceOf[String])
             val batchIds = batchContentList.keySet.toList.asJava
@@ -178,24 +177,12 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
                                 CassandraUtil.changeCassandraColumnMapping(processContentConsumption(inputContent, existingContent, userId))
                             })
                             // First push the event to kafka and then update cassandra user_content_consumption table
-                            val fieldList = List(JsonKey.PRIMARYCATEGORY, JsonKey.PARENT_COLLECTIONS)
-                            val contentInfoMap = ContentUtil.getContentReadV3(courseId, fieldList, request.getContext.getOrDefault(JsonKey.HEADER, new util.HashMap[String, String]).asInstanceOf[util.Map[String, String]])
-                            val parentCollectionList = contentInfoMap.get(JsonKey.PARENT_COLLECTIONS).asInstanceOf[java.util.List[String]]
-                            pushInstructionEvent(requestContext, userId, batchId, courseId, contents.asJava, contentInfoMap.get(JsonKey.PRIMARYCATEGORY).asInstanceOf[String], parentCollectionList)
+                            pushInstructionEvent(requestContext, userId, batchId, courseId, contents.asJava)
                             cassandraOperation.batchInsertLogged(requestContext, consumptionDBInfo.getKeySpace, consumptionDBInfo.getTableName, contents)
                             val updateData = getLatestReadDetails(userId, batchId, contents)
                             cassandraOperation.updateRecordV2(requestContext, enrolmentDBInfo.getKeySpace, enrolmentDBInfo.getTableName, updateData._1, updateData._2, true)
                             contentIds.map(id => responseMessage.put(id,JsonKey.SUCCESS))
-                            /*
-                            primaryCategoryDataMap.get(JsonKey.PRIMARYCATEGORY) match {
-                                case Some(value) if !Seq(JsonKey.BLENDED_PROGRAM,JsonKey.PROGRAM,JsonKey.CURATED_PROGRAM).contains(value) =>
-                                    parentCollectionList.foreach { parentCollection =>
-                                        pushInstructionEvent(requestContext, userId, "", parentCollection.asInstanceOf[String], contents.asJava,"")
-                                    }
-                                case _ =>
-                                    logger.info(requestContext,"The Primary category is not a Blended Program,Program and Curated Program")
-                            }
-                            */
+
                         } else {
                             logger.info(requestContext, "ContentConsumptionActor: addContent : User Id is invalid : " + userId)
                             invalidContents.addAll(entry._2.asJava)
@@ -345,7 +332,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
     }
 
     @throws[Exception]
-    private def pushInstructionEvent(requestContext: RequestContext, userId: String, batchId: String, courseId: String, contents: java.util.List[java.util.Map[String, AnyRef]], primaryCategory:String, parentCollections: java.util.List[String]): Unit = {
+    private def pushInstructionEvent(requestContext: RequestContext, userId: String, batchId: String, courseId: String, contents: java.util.List[java.util.Map[String, AnyRef]]): Unit = {
         val data = new java.util.HashMap[String, AnyRef]
         data.put(CourseJsonKey.ACTOR, new java.util.HashMap[String, AnyRef]() {{
             put(JsonKey.ID, InstructionEvent.BATCH_USER_STATE_UPDATE.getActorId)
@@ -365,8 +352,6 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
             put(JsonKey.BATCH_ID, batchId)
             put(JsonKey.COURSE_ID, courseId)
             put(JsonKey.CONTENTS, contentsMap)
-            put(JsonKey.PRIMARYCATEGORY, primaryCategory)
-            put(JsonKey.PARENT_COLLECTIONS, parentCollections)
             put(CourseJsonKey.ACTION, InstructionEvent.BATCH_USER_STATE_UPDATE.getAction)
             put(CourseJsonKey.ITERATION, 1.asInstanceOf[AnyRef])
         }})

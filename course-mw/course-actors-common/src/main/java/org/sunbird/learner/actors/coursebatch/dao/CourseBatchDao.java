@@ -62,9 +62,4 @@ public interface CourseBatchDao {
    * @param templateId
    */
   void removeCertificateTemplateFromCourseBatch(RequestContext requestContext, String courseId, String batchId, String templateId);
-
-  /**
-    * Retrieves first available batch
-    */
-  public CourseBatch readFirstAvailableBatch(String courseId, RequestContext requestContext);
 }
