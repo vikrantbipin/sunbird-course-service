@@ -46,9 +46,6 @@ import javax.inject.Named;
 import javax.ws.rs.core.MediaType;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -748,25 +745,13 @@ public class CourseBatchManagementActor extends BaseActor {
   }
 
   private void updateStartBatchesStatus(Request actorMessage){
-    Map<String, Object> request = actorMessage.getRequest();
-    String date = (String)request.get(JsonKey.START_DATE);
-    if (StringUtils.isNotBlank(date) && !isValidDateFormat(date)) {
-      ProjectCommonException.throwClientErrorException(
-              ResponseCode.invalidRequestParameter,
-              "The input date is not in the format yyyy-MM-dd");
-    }
-    if (StringUtils.isBlank(date)) {
-      ZonedDateTime istDateTime = ZonedDateTime.now(ZoneId.of("Asia/Kolkata"));
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern(Constants.DATE_FORMAT);
-      date = istDateTime.format(formatter);
-    }
+
     //Construct Search DTO
     SearchDTO dto = new SearchDTO();
     Map<String, Object> filterMap = new HashMap<>();
-    logger.info(actorMessage.getRequestContext(),"Current IST Time: " + date);
-    HashMap<String,String> startDate = new HashMap<String,String>();
-    startDate.put(Constants.EQUAL, date);
-    filterMap.put(JsonKey.START_DATE,startDate);
+    HashMap<String,String> val = new HashMap<String,String>();
+    val.put(Constants.LTE,new SimpleDateFormat(Constants.DATE_FORMAT).format(new Date()));
+    filterMap.put(JsonKey.START_DATE,val);
     filterMap.put(JsonKey.STATUS,0);
     dto.getAdditionalProperties().put(JsonKey.FILTERS, filterMap);
     Future future = esService.search(actorMessage.getRequestContext(), dto, ProjectUtil.EsType.courseBatch.getTypeName());
@@ -798,16 +783,6 @@ public class CourseBatchManagementActor extends BaseActor {
       } catch (Exception e) {
         logger.error(actorMessage.getRequestContext(),"Error while updating batch "+identifier,e);
       }
-    }
-  }
-  private static boolean isValidDateFormat(String date) {
-    SimpleDateFormat sdf = new SimpleDateFormat(Constants.DATE_FORMAT);
-    sdf.setLenient(false);
-    try {
-      sdf.parse(date);
-      return true;
-    } catch (ParseException e) {
-      return false;
     }
   }
 }
