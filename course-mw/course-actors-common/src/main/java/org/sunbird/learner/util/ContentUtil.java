@@ -3,23 +3,26 @@ package org.sunbird.learner.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import javax.ws.rs.core.MediaType;
 
 import com.mashape.unirest.http.exceptions.UnirestException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
+import org.sunbird.common.Constants;
+import org.sunbird.common.ElasticSearchHelper;
 import org.sunbird.common.exception.ProjectCommonException;
+import org.sunbird.common.factory.EsClientFactory;
 import org.sunbird.common.models.response.HttpUtilResponse;
 import org.sunbird.common.models.util.*;
 import org.sunbird.common.request.Request;
 import org.sunbird.common.request.RequestContext;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.common.util.JsonUtil;
+import org.sunbird.dto.SearchDTO;
+import scala.concurrent.Future;
 
 /**
  * This class will make the call to EkStep content search
@@ -225,5 +228,54 @@ public final class ContentUtil {
       logger.error(null, "User don't have access to this courseId " + courseId, e);
     }
     return flag;
+  }
+  public static Map<String, Object> getAllContent(int pageSize) {
+    int recordStart = 0;
+    int remainingRecords;
+    Map<String, Object> allRecords = new HashMap<>();
+    do {
+      Map.Entry<Integer, Map<String, Map<String, Object>>> contentsResult = contents(recordStart, pageSize);
+      int count = contentsResult.getKey();
+      Map<String, Map<String, Object>> contentMap = contentsResult.getValue();
+      allRecords.putAll(contentMap);
+      // Update remaining records and move to the next page if needed
+      remainingRecords = count - allRecords.size();
+      recordStart = allRecords.size() - 1;
+    } while (remainingRecords > 0);
+
+    return allRecords;
+  }
+  public static Map.Entry<Integer, Map<String, Map<String, Object>>> contents(int offset, int limit) {
+    SearchDTO searchDTO = new SearchDTO();
+    searchDTO.setOffset(offset);
+    searchDTO.setLimit(limit);
+    HashMap filters = new java.util.HashMap<String, Object>();
+    HashMap enabled = new HashMap();
+    enabled.put("enabled","Yes");
+    filters.put("trackable",enabled);
+    filters.put(JsonKey.MIME_TYPE, JsonKey.COLLECTION_MIME_TYPE);
+    filters.put(JsonKey.STATUS,JsonKey.LIVE);
+    searchDTO.getAdditionalProperties().put(JsonKey.FILTERS, filters);
+    Future<Map<String, Object>> resultFuture = EsClientFactory.getInstance(JsonKey.REST).search(null,searchDTO, ProjectUtil.EsType.compositeSearch.getTypeName(),false);
+    HashMap result= (HashMap<String,Object>) ElasticSearchHelper.getResponseFromFuture(resultFuture);
+    Long longCount = (Long) result.getOrDefault(JsonKey.COUNT, 0L);
+    int count = longCount.intValue();
+    List<Map<String, Object>> coursesList = (List<Map<String, Object>>) result.getOrDefault(JsonKey.CONTENT, new ArrayList<>());
+    Map<String, Map<String, Object>> coursesMap = new HashMap<>();
+    if (CollectionUtils.isNotEmpty(coursesList)) {
+      for (Map<String, Object> enrolment : coursesList) {
+        String courseId = (String) enrolment.get(JsonKey.IDENTIFIER);
+        Map<String, Object> courseData = new HashMap<>();
+        courseData.put(JsonKey.COURSE_NAME, enrolment.get(JsonKey.NAME));
+        courseData.put(JsonKey.DESCRIPTION, enrolment.get(JsonKey.DESCRIPTION));
+        courseData.put(JsonKey.LEAF_NODE_COUNT, enrolment.get(JsonKey.LEAF_NODE_COUNT));
+        courseData.put(JsonKey.COURSE_LOGO_URL, enrolment.get(JsonKey.APP_ICON));
+        courseData.put(JsonKey.CONTENT_ID, enrolment.get(JsonKey.COURSE_ID));
+        courseData.put(JsonKey.COLLECTION_ID, enrolment.get(JsonKey.COURSE_ID));
+        courseData.put(JsonKey.CONTENT, enrolment);
+        coursesMap.put(courseId, courseData);
+      }
+    }
+    return new AbstractMap.SimpleEntry<>(count, coursesMap);
   }
 }

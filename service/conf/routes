@@ -13,7 +13,8 @@ POST /v1/data/sync                          @controllers.search.SearchController
 DELETE /v1/cache/clear/:mapName @controllers.cache.CacheController.clearCache(mapName:String, request: play.mvc.Http.Request)
 
 # Course Management APIs
-GET      /v1/user/courses/list/:uid	    @controllers.courseenrollment.CourseEnrollmentController.getEnrolledCourses(uid:String, request: play.mvc.Http.Request)
+GET      /v1/user/courses/list/:uid	    @controllers.courseenrollment.CourseEnrollmentController.getEnrolledCourses_v1(uid:String, request: play.mvc.Http.Request)
+GET      /v2/user/courses/list/:uid	    @controllers.courseenrollment.CourseEnrollmentController.getEnrolledCourses_v2(uid:String, request: play.mvc.Http.Request)
 GET      /private/v1/user/courses/list/:uid	    @controllers.courseenrollment.CourseEnrollmentController.privateGetEnrolledCourses(uid:String, request: play.mvc.Http.Request)
 POST     /v2/user/courses/list	    @controllers.courseenrollment.CourseEnrollmentController.getUserEnrolledCourses(request: play.mvc.Http.Request)
 POST     /v2/user/courses/admin/list	    @controllers.courseenrollment.CourseEnrollmentController.adminGetUserEnrolledCourses(request: play.mvc.Http.Request)
@@ -79,7 +80,7 @@ POST /v1/collection/summary                     @controllers.collectionsummaryag
 
 
 # Event Management APIs
-GET     /v1/user/event/list/:uid            @controllers.courseenrollment.CourseEnrollmentController.getEnrolledCourses(uid: String, request: play.mvc.Http.Request)
+GET     /v1/user/event/list/:uid            @controllers.courseenrollment.CourseEnrollmentController.getEnrolledCourses_v1(uid: String, request: play.mvc.Http.Request)
 POST    /v1/event/enroll	    		    @controllers.courseenrollment.CourseEnrollmentController.enrollCourse(request: play.mvc.Http.Request)
 POST    /v1/event/unenroll                  @controllers.courseenrollment.CourseEnrollmentController.unenrollCourse(request: play.mvc.Http.Request)
 GET     /v1/event/participants/list         @controllers.courseenrollment.CourseEnrollmentController.getParticipantsForFixedBatch(request: play.mvc.Http.Request)
