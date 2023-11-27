@@ -217,6 +217,32 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             enrolmentList
     }
 
+    def addBatchDetails_v2(enrolmentList: util.List[util.Map[String, AnyRef]], request: Request): util.List[util.Map[String, AnyRef]] = {
+        val blendedEnrolments = enrolmentList
+          .filter(enrolment =>
+              enrolment.get("primaryCategory") == "Blended Program" &&
+                StringUtils.isNotBlank(enrolment.getOrDefault(JsonKey.BATCH_ID, "").asInstanceOf[String])
+          )
+        if (blendedEnrolments.isEmpty) {
+            return enrolmentList
+        }
+        val batchIds: java.util.List[String] = blendedEnrolments
+          .map(e => e.getOrDefault(JsonKey.BATCH_ID, "").asInstanceOf[String])
+          .distinct
+          .toList
+          .asJava
+        val batchDetails = searchBatchDetails(batchIds, request)
+        if (CollectionUtils.isNotEmpty(batchDetails)) {
+            val batchMap = batchDetails.map(b => b.get(JsonKey.BATCH_ID).asInstanceOf[String] -> b).toMap
+            blendedEnrolments.map(enrolment => {
+                enrolment.put(JsonKey.BATCH, batchMap.getOrElse(enrolment.get(JsonKey.BATCH_ID).asInstanceOf[String], new java.util.HashMap[String, AnyRef]()))
+                enrolment
+            }).toList.asJava
+        } else {
+            enrolmentList
+        }
+    }
+
     def searchBatchDetails(batchIds: java.util.List[String], request: Request): java.util.List[java.util.Map[String, AnyRef]] = {
         val requestedFields: java.util.List[String] = if(null != request.getContext.get(JsonKey.BATCH_DETAILS).asInstanceOf[Array[String]]) request.getContext.get(JsonKey.BATCH_DETAILS).asInstanceOf[Array[String]](0).split(",").toList.asJava else new java.util.ArrayList[String]()
         if(CollectionUtils.isNotEmpty(requestedFields)) {
@@ -369,10 +395,10 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def getEnrolmentList(request: Request, userId: String, courseIdList: java.util.List[String]): Response = {
         logger.info(request.getRequestContext,"CourseEnrolmentActor :: getCachedEnrolmentList :: fetching data from cassandra with userId " + userId)
+        //ContentUtil.getAllContent(PropertiesCache.getInstance.getProperty(JsonKey.PAGE_SIZE_CONTENT_FETCH).toInt)
         val activeEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getActiveEnrollments( userId, courseIdList, request.getRequestContext)
         val enrolments: java.util.List[java.util.Map[String, AnyRef]] = {
             if (CollectionUtils.isNotEmpty(activeEnrolments)) {
-
               val allCourseIds: java.util.List[String] = activeEnrolments.map(e => e.getOrDefault(JsonKey.COURSE_ID, "").asInstanceOf[String]).distinct.filter(id => StringUtils.isNotBlank(id)).toList.asJava
                 val courseIds = new java.util.ArrayList[String]()
                 val secureCourseIds = new java.util.ArrayList[String]()
@@ -402,7 +428,10 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                     }
                 }
                 val updatedEnrolmentList = updateProgressData(allEnrolledCourses, userId, allCourseIds, request.getRequestContext)
+                if(version.equals("v1"))
                 addBatchDetails(updatedEnrolmentList, request)
+                else addBatchDetails_v2(updatedEnrolmentList, request)
+
             } else new java.util.ArrayList[java.util.Map[String, AnyRef]]()
         }
         val resp: Response = new Response()
@@ -433,7 +462,9 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
     def addCourseDetails_v2(activeEnrolments: java.util.List[java.util.Map[String, AnyRef]]): java.util.List[java.util.Map[String, AnyRef]] = {
         val coursesMap = ContentCacheHandler.getContentMap.asInstanceOf[java.util.Map[String, java.util.Map[String, AnyRef]]]
         activeEnrolments.filter(enrolment => coursesMap.containsKey(enrolment.get(JsonKey.COURSE_ID))).map(enrolment => {
-            val courseContent = coursesMap.get(enrolment.get(JsonKey.COURSE_ID))
+            var courseContent = coursesMap.get(enrolment.get(JsonKey.COURSE_ID))
+            if(courseContent == null || courseContent.size() < 1)
+                courseContent = ContentCacheHandler.getContent(enrolment.get(JsonKey.COURSE_ID).asInstanceOf[String])
             enrolment.put(JsonKey.COURSE_NAME, courseContent.get(JsonKey.NAME))
             enrolment.put(JsonKey.DESCRIPTION, courseContent.get(JsonKey.DESCRIPTION))
             enrolment.put(JsonKey.LEAF_NODE_COUNT, courseContent.get(JsonKey.LEAF_NODE_COUNT))

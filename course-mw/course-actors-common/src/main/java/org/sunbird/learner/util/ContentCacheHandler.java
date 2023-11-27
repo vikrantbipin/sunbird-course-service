@@ -5,6 +5,7 @@ import org.sunbird.common.models.util.JsonKey;
 import org.sunbird.common.models.util.LoggerUtil;
 import org.sunbird.common.models.util.PropertiesCache;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -42,5 +43,16 @@ public class ContentCacheHandler implements Runnable {
   /** @return the contentCache */
   public static Map<String, Object> getContentMap() {
     return contentMap;
+  }
+
+  public static Map<String, Object> getContent(String id) {
+      Map<String, Object> obj = (Map<String, Object>)contentMap.get(id);
+    if(obj == null)
+       return obj;
+    else{
+         ContentUtil.getAllContent(Arrays.asList(id.split("")),Integer.parseInt(PropertiesCache.getInstance()
+                .getProperty(JsonKey.PAGE_SIZE_CONTENT_FETCH)));
+       return (Map<String, Object>)contentMap.get(id);
+    }
   }
 }

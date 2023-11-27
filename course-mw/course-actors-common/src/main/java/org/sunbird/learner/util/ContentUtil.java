@@ -229,12 +229,12 @@ public final class ContentUtil {
     }
     return flag;
   }
-  public static Map<String, Object> getAllContent(int pageSize) {
+  public static Map<String, Object> getAllContent(List identifierList,int pageSize) {
     int recordStart = 0;
     int remainingRecords;
     Map<String, Object> allRecords = new HashMap<>();
     do {
-      Map.Entry<Integer, Map<String, Map<String, Object>>> contentsResult = contents(recordStart, pageSize);
+      Map.Entry<Integer, Map<String, Map<String, Object>>> contentsResult = contents(identifierList,recordStart, pageSize);
       int count = contentsResult.getKey();
       Map<String, Map<String, Object>> contentMap = contentsResult.getValue();
       allRecords.putAll(contentMap);
@@ -245,18 +245,28 @@ public final class ContentUtil {
 
     return allRecords;
   }
-  public static Map.Entry<Integer, Map<String, Map<String, Object>>> contents(int offset, int limit) {
+  public static Map<String, Object> getAllContent(int pageSize) {
+    return getAllContent(null, pageSize);
+  }
+    public static Map.Entry<Integer, Map<String, Map<String, Object>>> contents(List identifierList,int offset, int limit) {
     SearchDTO searchDTO = new SearchDTO();
     searchDTO.setOffset(offset);
     searchDTO.setLimit(limit);
     HashMap filters = new java.util.HashMap<String, Object>();
     HashMap enabled = new HashMap();
-    enabled.put("enabled","Yes");
-    filters.put("trackable",enabled);
+    enabled.put(JsonKey.TRACKABLE_ENABLED,JsonKey.YES);
+    List<String> queryFields = new ArrayList<>();
+    String queryFieldsParam =  PropertiesCache.getInstance()
+            .getProperty(JsonKey.ENROL_FIELDS_LIST);
+    queryFields.addAll(Arrays.asList(queryFieldsParam.split(",")));
+    searchDTO.setFields(queryFields);
     filters.put(JsonKey.MIME_TYPE, JsonKey.COLLECTION_MIME_TYPE);
     filters.put(JsonKey.STATUS,JsonKey.LIVE);
+    if(identifierList != null && identifierList.size() > 0)
+      filters.put(JsonKey.IDENTIFIER,identifierList);
     searchDTO.getAdditionalProperties().put(JsonKey.FILTERS, filters);
-    Future<Map<String, Object>> resultFuture = EsClientFactory.getInstance(JsonKey.REST).search(null,searchDTO, ProjectUtil.EsType.compositeSearch.getTypeName(),false);
+    searchDTO.getAdditionalProperties().put(JsonKey.NESTED_KEY_FILTER, enabled);
+    Future<Map<String, Object>> resultFuture = EsClientFactory.getInstance(JsonKey.REST).search(null,searchDTO, ProjectUtil.EsType.compositeSearch.getTypeName(),isCotentElasticSearchTypeDoc());
     HashMap result= (HashMap<String,Object>) ElasticSearchHelper.getResponseFromFuture(resultFuture);
     Long longCount = (Long) result.getOrDefault(JsonKey.COUNT, 0L);
     int count = longCount.intValue();
@@ -265,17 +275,19 @@ public final class ContentUtil {
     if (CollectionUtils.isNotEmpty(coursesList)) {
       for (Map<String, Object> enrolment : coursesList) {
         String courseId = (String) enrolment.get(JsonKey.IDENTIFIER);
-        Map<String, Object> courseData = new HashMap<>();
-        courseData.put(JsonKey.COURSE_NAME, enrolment.get(JsonKey.NAME));
-        courseData.put(JsonKey.DESCRIPTION, enrolment.get(JsonKey.DESCRIPTION));
-        courseData.put(JsonKey.LEAF_NODE_COUNT, enrolment.get(JsonKey.LEAF_NODE_COUNT));
-        courseData.put(JsonKey.COURSE_LOGO_URL, enrolment.get(JsonKey.APP_ICON));
-        courseData.put(JsonKey.CONTENT_ID, enrolment.get(JsonKey.COURSE_ID));
-        courseData.put(JsonKey.COLLECTION_ID, enrolment.get(JsonKey.COURSE_ID));
-        courseData.put(JsonKey.CONTENT, enrolment);
-        coursesMap.put(courseId, courseData);
+        coursesMap.put(courseId, enrolment);
       }
     }
     return new AbstractMap.SimpleEntry<>(count, coursesMap);
+  }
+
+  public static  Map.Entry<Integer, Map<String, Map<String, Object>>> contents( int offset, int limit) {
+   return contents(null, offset,  limit);
+  }
+
+  private static boolean isCotentElasticSearchTypeDoc() {
+    return Boolean.parseBoolean(
+            PropertiesCache.getInstance()
+                    .getProperty(JsonKey.CONTENT_ELASTIC_SEARCH_TYPE_DOC));
   }
 }
