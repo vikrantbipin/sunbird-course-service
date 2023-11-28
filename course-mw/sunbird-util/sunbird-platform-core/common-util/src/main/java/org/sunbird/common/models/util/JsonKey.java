@@ -1083,6 +1083,15 @@ public final class JsonKey {
   public static final String PRIMARY_CATEGORY_BLENDED_PROGRAM = "Blended Program";
   public static final String COURSE_BATCH_ENROLL_END_DATE_LESS = "enrol_end_date_allow_lesser_value";
   public static final String BATCH_ATTRIBUTES_KEY = "batch_attributes";
+
+  public static final String PAGE_SIZE_CONTENT_FETCH = "number_of_records_per_trip_content_cache_load";
+
+  public static final String LIVE= "live";
+
+  public static final String CONTENT_ELASTIC_SEARCH_TYPE_DOC = "content_elastic_search_doc_type";
+
+  public static final String ENROL_FIELDS_LIST = "enrol_list_fields";
+
   public static final String IS_ADMIN_API = "isAdminAPI";
   public static final String RETIRED_COURE_ENABLED = "retiredCoursesEnabled";
   public static final String FALSE = "false";

@@ -320,7 +320,9 @@ public class ElasticSearchRestHighImpl implements ElasticSearchService {
             + calculateEndTime(startTime));
     return promise.future();
   }
-
+  public Future<Map<String, Object>> search(RequestContext requestContext, SearchDTO searchDTO, String index) {
+   return search( requestContext,  searchDTO,  index,true);
+  }
   /**
    * Method to perform the elastic search on the basis of SearchDTO . SearchDTO contains the search
    * criteria like fields, facets, sort by , filters etc. here user can pass single type to search
@@ -330,13 +332,14 @@ public class ElasticSearchRestHighImpl implements ElasticSearchService {
    */
   @Override
   @SuppressWarnings({"unchecked", "rawtypes"})
-  public Future<Map<String, Object>> search(RequestContext requestContext, SearchDTO searchDTO, String index) {
+  public Future<Map<String, Object>> search(RequestContext requestContext, SearchDTO searchDTO, String index,boolean docType) {
     long startTime = System.currentTimeMillis();
 
     logger.debug(requestContext, 
         "ElasticSearchRestHighImpl:search: method started at ==" + startTime);
     SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     SearchRequest searchRequest = new SearchRequest(index);
+    if(docType)
     searchRequest.types(_DOC);
 
     // check mode and set constraints

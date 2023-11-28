@@ -7,16 +7,22 @@ import java.util.*;
 import javax.ws.rs.core.MediaType;
 
 import com.mashape.unirest.http.exceptions.UnirestException;
+import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
+import org.sunbird.common.Constants;
+import org.sunbird.common.ElasticSearchHelper;
 import org.sunbird.common.exception.ProjectCommonException;
+import org.sunbird.common.factory.EsClientFactory;
 import org.sunbird.common.models.response.HttpUtilResponse;
 import org.sunbird.common.models.util.*;
 import org.sunbird.common.request.Request;
 import org.sunbird.common.request.RequestContext;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.common.util.JsonUtil;
+import org.sunbird.dto.SearchDTO;
+import scala.concurrent.Future;
 
 /**
  * This class will make the call to EkStep content search
@@ -223,6 +229,67 @@ public final class ContentUtil {
     }
     return flag;
   }
+  public static Map<String, Object> getAllContent(List identifierList,int pageSize) {
+    int recordStart = 0;
+    int remainingRecords;
+    Map<String, Object> allRecords = new HashMap<>();
+    do {
+      Map.Entry<Integer, Map<String, Map<String, Object>>> contentsResult = contents(identifierList,recordStart, pageSize);
+      int count = contentsResult.getKey();
+      Map<String, Map<String, Object>> contentMap = contentsResult.getValue();
+      allRecords.putAll(contentMap);
+      // Update remaining records and move to the next page if needed
+      remainingRecords = count - allRecords.size();
+      recordStart = allRecords.size() - 1;
+    } while (remainingRecords > 0);
+
+    return allRecords;
+  }
+  public static Map<String, Object> getAllContent(int pageSize) {
+    return getAllContent(null, pageSize);
+  }
+    public static Map.Entry<Integer, Map<String, Map<String, Object>>> contents(List identifierList,int offset, int limit) {
+    SearchDTO searchDTO = new SearchDTO();
+    searchDTO.setOffset(offset);
+    searchDTO.setLimit(limit);
+    HashMap filters = new java.util.HashMap<String, Object>();
+    HashMap enabled = new HashMap();
+    enabled.put(JsonKey.TRACKABLE_ENABLED,JsonKey.YES);
+    List<String> queryFields = new ArrayList<>();
+    String queryFieldsParam =  PropertiesCache.getInstance()
+            .getProperty(JsonKey.ENROL_FIELDS_LIST);
+    queryFields.addAll(Arrays.asList(queryFieldsParam.split(",")));
+    searchDTO.setFields(queryFields);
+    filters.put(JsonKey.MIME_TYPE, JsonKey.COLLECTION_MIME_TYPE);
+    filters.put(JsonKey.STATUS,JsonKey.LIVE);
+    if(identifierList != null && identifierList.size() > 0)
+      filters.put(JsonKey.IDENTIFIER,identifierList);
+    searchDTO.getAdditionalProperties().put(JsonKey.FILTERS, filters);
+    searchDTO.getAdditionalProperties().put(JsonKey.NESTED_KEY_FILTER, enabled);
+    Future<Map<String, Object>> resultFuture = EsClientFactory.getInstance(JsonKey.REST).search(null,searchDTO, ProjectUtil.EsType.compositeSearch.getTypeName(),isCotentElasticSearchTypeDoc());
+    HashMap result= (HashMap<String,Object>) ElasticSearchHelper.getResponseFromFuture(resultFuture);
+    Long longCount = (Long) result.getOrDefault(JsonKey.COUNT, 0L);
+    int count = longCount.intValue();
+    List<Map<String, Object>> coursesList = (List<Map<String, Object>>) result.getOrDefault(JsonKey.CONTENT, new ArrayList<>());
+    Map<String, Map<String, Object>> coursesMap = new HashMap<>();
+    if (CollectionUtils.isNotEmpty(coursesList)) {
+      for (Map<String, Object> enrolment : coursesList) {
+        String courseId = (String) enrolment.get(JsonKey.IDENTIFIER);
+        coursesMap.put(courseId, enrolment);
+      }
+    }
+    return new AbstractMap.SimpleEntry<>(count, coursesMap);
+  }
+
+  public static  Map.Entry<Integer, Map<String, Map<String, Object>>> contents( int offset, int limit) {
+   return contents(null, offset,  limit);
+  }
+
+  private static boolean isCotentElasticSearchTypeDoc() {
+    return Boolean.parseBoolean(
+            PropertiesCache.getInstance()
+                    .getProperty(JsonKey.CONTENT_ELASTIC_SEARCH_TYPE_DOC));
+
   public static Map<String, Object> getContentReadV2(String collectionId, Map<String, String> allHeaders) {
     try {
       Map<String, String> headers = new HashMap<String, String>();
