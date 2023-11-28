@@ -480,7 +480,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val coursesMap = ContentCacheHandler.getContentMap.asInstanceOf[java.util.Map[String, java.util.Map[String, AnyRef]]]
         activeEnrolments.filter(enrolment => coursesMap.containsKey(enrolment.get(JsonKey.COURSE_ID))).map(enrolment => {
             var courseContent = coursesMap.get(enrolment.get(JsonKey.COURSE_ID))
-            if(courseContent == null || courseContent.size() < 1)
+            if (courseContent == null || courseContent.size() < 1)
                 courseContent = ContentCacheHandler.getContent(enrolment.get(JsonKey.COURSE_ID).asInstanceOf[String])
             enrolment.put(JsonKey.COURSE_NAME, courseContent.get(JsonKey.NAME))
             enrolment.put(JsonKey.DESCRIPTION, courseContent.get(JsonKey.DESCRIPTION))
@@ -491,7 +491,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             enrolment.put(JsonKey.CONTENT, courseContent)
             enrolment
         }).toList.asJava
-
+    }
     def enrollProgram(request: Request): Unit = {
         val programId: String = request.get(JsonKey.PROGRAM_ID).asInstanceOf[String]
         val isAdminAPI: Boolean = request.get(JsonKey.IS_ADMIN_API).asInstanceOf[Boolean]
