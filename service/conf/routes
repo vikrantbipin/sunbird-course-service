@@ -23,12 +23,15 @@ POST     /v1/course/enroll	    		@controllers.courseenrollment.CourseEnrollmentC
 POST     /v1/course/unenroll             @controllers.courseenrollment.CourseEnrollmentController.unenrollCourse(request: play.mvc.Http.Request)
 POST     /v1/course/admin/enroll	    		@controllers.courseenrollment.CourseEnrollmentController.adminEnrollCourse(request: play.mvc.Http.Request)
 POST     /v1/course/admin/unenroll             @controllers.courseenrollment.CourseEnrollmentController.adminUnenrollCourse(request: play.mvc.Http.Request)
+POST     /v1/program/enroll	    		@controllers.courseenrollment.CourseEnrollmentController.enrollProgram(request: play.mvc.Http.Request)
+POST     /v1/program/admin/enroll	    		@controllers.courseenrollment.CourseEnrollmentController.adminEnrollProgram(request: play.mvc.Http.Request)
 POST /v1/batch/bulk/enrollment          @controllers.bulkapimanagement.BulkUploadController.batchEnrollmentBulkUpload(request: play.mvc.Http.Request)
 POST /v1/batch/bulk/unenrollment          @controllers.bulkapimanagement.BulkUploadController.batchUnEnrollmentBulkUpload(request: play.mvc.Http.Request)
 POST     /v1/content/state/read	        @controllers.LearnerController.getContentState(request: play.mvc.Http.Request)
 POST     /private/v1/content/state/read	        @controllers.LearnerController.privateGetContentState(request: play.mvc.Http.Request)
 PATCH    /v1/user/content/state     	@controllers.LearnerController.updateContentState(request: play.mvc.Http.Request)
 PATCH    /v1/content/state/update     	@controllers.LearnerController.updateContentState(request: play.mvc.Http.Request)
+PATCH    /v1/content/state/admin/update     	@controllers.LearnerController.updateContentStateByAdmin(request: play.mvc.Http.Request)
 
 # Upload Job Management APIs - Check with Krisha  - TODO
 GET  /v1/upload/status/:pid             @controllers.bulkapimanagement.BulkUploadController.getUploadStatus(pid:String, request: play.mvc.Http.Request)
@@ -54,7 +57,9 @@ POST     /private/v1/course/batch/create		@controllers.coursemanagement.CourseBa
 PATCH 	 /v1/course/batch/update				@controllers.coursemanagement.CourseBatchController.updateBatch(request: play.mvc.Http.Request)
 GET		 /v1/course/batch/read/:batchId			@controllers.coursemanagement.CourseBatchController.getBatch(batchId:String, request: play.mvc.Http.Request)
 POST     /v1/course/batch/search                @controllers.coursemanagement.CourseBatchController.search(request: play.mvc.Http.Request)
-POST		 /v1/batch/participants/list			@controllers.coursemanagement.CourseBatchController.getParticipants(request: play.mvc.Http.Request)
+POST	 /v1/batch/participants/list			@controllers.coursemanagement.CourseBatchController.getParticipants(request: play.mvc.Http.Request)
+
+POST 	 /v1/activate-started/course/batches/status		@controllers.coursemanagement.CourseBatchController.updateStartBatchesStatus(request: play.mvc.Http.Request)
 
 # Textbook APIs
 POST    /v1/textbook/toc/upload/:textbookId           @controllers.textbook.TextbookController.uploadTOC(textbookId:String, request: play.mvc.Http.Request)
@@ -65,6 +70,7 @@ GET    /v1/textbook/toc/download/:textbookId           @controllers.textbook.Tex
 POST /v1/course/batch/cert/issue           @controllers.certificate.CertificateController.issueCertificate(request: play.mvc.Http.Request)
 PATCH /v1/course/batch/cert/template/add           @controllers.certificate.CertificateController.addCertificate(request: play.mvc.Http.Request)
 PATCH /v1/course/batch/cert/template/remove           @controllers.certificate.CertificateController.deleteCertificate(request: play.mvc.Http.Request)
+PATCH /private/v1/course/batch/cert/template/add           @controllers.certificate.CertificateController.privateAddCertificate(request: play.mvc.Http.Request)
 
 #QR Code Download APIs
 POST  /v1/course/qrcode/download                @controllers.qrcodedownload.QRCodeDownloadController.downloadQRCodes(request: play.mvc.Http.Request)

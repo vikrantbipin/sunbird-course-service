@@ -11,6 +11,7 @@ import java.util.Map;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.sunbird.actor.base.BaseActor;
+import org.sunbird.common.CassandraUtil;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.response.Response;
 import org.sunbird.common.models.util.JsonKey;
@@ -25,6 +26,7 @@ import org.sunbird.learner.actors.coursebatch.dao.impl.CourseBatchDaoImpl;
 import org.sunbird.learner.constants.CourseJsonKey;
 import org.sunbird.learner.util.CourseBatchUtil;
 import org.sunbird.learner.util.Util;
+import org.sunbird.models.course.batch.CourseBatch;
 
 public class CourseBatchCertificateActor extends BaseActor {
 
@@ -54,7 +56,11 @@ public class CourseBatchCertificateActor extends BaseActor {
         (Map<String, Object>) request.getRequest().get(JsonKey.BATCH);
     final String batchId = (String) batchRequest.get(JsonKey.BATCH_ID);
     final String courseId = (String) batchRequest.get(JsonKey.COURSE_ID);
-    CourseBatchUtil.validateCourseBatch(request.getRequestContext(), courseId, batchId);
+    CourseBatch exsistingBatch = courseBatchDao.readById(courseId, batchId, request.getRequestContext());
+    if (exsistingBatch == null) {
+      ProjectCommonException.throwClientErrorException(
+          ResponseCode.CLIENT_ERROR, "No such batchId exists");
+    }
     Map<String, Object> template = (Map<String, Object>) batchRequest.get(CourseJsonKey.TEMPLATE);
     String templateId = (String) template.get(JsonKey.IDENTIFIER);
     validateTemplateDetails(request.getRequestContext(), templateId, template);
@@ -62,7 +68,7 @@ public class CourseBatchCertificateActor extends BaseActor {
     courseBatchDao.addCertificateTemplateToCourseBatch(request.getRequestContext(), courseId, batchId, templateId, template);
     logger.info(request.getRequestContext(), "Added certificate template to batchID: " +  batchId);
     Map<String, Object> courseBatch =
-        mapESFieldsToObject(courseBatchDao.getCourseBatch(request.getRequestContext(), courseId, batchId));
+        mapESFieldsToObject(CassandraUtil.convertStringToMap(courseBatchDao.getCourseBatch(request.getRequestContext(), courseId, batchId),"batchAttributes"));
     CourseBatchUtil.syncCourseBatchForeground(request.getRequestContext(), batchId, courseBatch);
     logger.info(request.getRequestContext(), "Synced to es certificate template to batchID: " +  batchId);
     Response response = new Response();

@@ -1092,5 +1092,32 @@ public final class JsonKey {
 
   public static final String ENROL_FIELDS_LIST = "enrol_list_fields";
 
+  public static final String IS_ADMIN_API = "isAdminAPI";
+  public static final String RETIRED_COURE_ENABLED = "retiredCoursesEnabled";
+  public static final String FALSE = "false";
+  public static final String PROGRAM_ID = "programId";
+  public static final String PROGRAM_ENROLL_ALLOWED_PRIMARY_CATEGORY = "program_enroll_allowed_primary_category";
+  public static final String PROGRAM_ENROLL_ALLOWED_CHILDREN_PRIMARY_CATEGORY = "program_enroll_allowed_children_primary_category";
+  public static final String CONTENT_HIERARCHY_STORE_KEY_SPACE_NAME = "content_hierarchy_store_key_space_name";
+  public static final String CONTENT_HIERARCHY_STORE_DB = "content_hierarchy";
+  public static final String PROGRAM_ENROLL_RESTRICTED_CHILDREN_PRIMARY_CATEGORY = "program_enroll_restricted_children_primary_category";
+
+  public static final String BLENDED_PROGRAM= "Blended Program";
+  public static final String PROGRAM= "Program";
+  public static final String CURATED_PROGRAM= "Curated Program";
+  public static final String PARENT_COLLECTIONS= "parentCollections";
+  public static final String ADMIN_PROGRAM_ENROLL_ALLOWED_PRIMARY_CATEGORY = "admin_program_enroll_allowed_primary_category";
+  public static final String LMS_SERVICE_HOST = "lms.service.host";
+  public static final String SUNBIRD_BATCH_UPDATE_NOTIFICATIONS_ENABLED =
+          "sunbird_batch_update_notification_enabled";
+
+  public static final String REGARDS = "regards";
+  public static final String SUNBIRD_BATCH_DATE_UPDATE_NOTIFICATIONS_SUBJECT = "sunbird_batch_date_update_notifications_subject" ;
+  public static final String LMS_SEND_EMAIL_NOTIFICATION_PATH = "lms.send.email.notification";
+  public static final String USER_COURSE_ENROLMENT_INFO = "userCourseEnrolmentInfo";
+  public static final String ISSUED_CERTIFICATES = "issuedCertificates";
+  public static final String TIME_SPENT_ON_COMPLETED_COURSES = "timeSpentOnCompletedCourses";
+  public static final String CERITFICATES_ISSUED = "certificatesIssued";
+  public static final String COURSES_IN_PROGRESS = "coursesInProgress";
   private JsonKey() {}
 }

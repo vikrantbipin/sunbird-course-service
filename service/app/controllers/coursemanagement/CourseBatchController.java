@@ -13,12 +13,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import javax.inject.Inject;
 import javax.inject.Named;
-import org.sunbird.common.models.util.ActorOperations;
-import org.sunbird.common.models.util.JsonKey;
-import org.sunbird.common.models.util.LoggerEnum;
-import org.sunbird.common.models.util.ProjectLogger;
+
+import org.sunbird.common.models.util.*;
 import org.sunbird.common.models.util.ProjectUtil.EsType;
 import org.sunbird.common.request.Request;
+import org.sunbird.dto.SearchDTO;
 import play.mvc.Http;
 import play.mvc.Result;
 import util.Attrs;
@@ -124,4 +123,13 @@ public class CourseBatchController extends BaseController {
         getAllRequestHeaders(httpRequest),
         httpRequest);
   }
+
+    public CompletionStage<Result> updateStartBatchesStatus(Http.Request httpRequest) {
+        return handleRequest(
+                courseBatchActorRef,
+                ActorOperations.UPDATE_START_BATCHES_STATUS.getValue(),
+                "",
+                null,
+                httpRequest);
+    }
 }

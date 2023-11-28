@@ -105,9 +105,11 @@ public class CourseEnrollmentController extends BaseController {
           Request req = (Request) request;
           Map<String, String[]> queryParams = new HashMap<>(httpRequest.queryString());
           String courseId = req.getRequest().containsKey(JsonKey.COURSE_ID) ? JsonKey.COURSE_ID : JsonKey.COLLECTION_ID;
+          String batchId = (String)req.getRequest().get(JsonKey.BATCH_ID);
           req.getRequest().put(JsonKey.COURSE_ID, req.getRequest().get(courseId));
           String userId = (String) req.getContext().getOrDefault(JsonKey.REQUESTED_FOR, req.getContext().get(JsonKey.REQUESTED_BY));
           validator.validateRequestedBy(userId);
+          logger.info( ((Request) request).getRequestContext(), " CourseEnrollmentController : Request for enroll recieved, UserId : "+  userId +", courseId : "+courseId + ", batchId:"+batchId);
           req.getRequest().put(JsonKey.USER_ID, userId);
           validator.validateEnrollCourse(req);
           return null;
@@ -124,9 +126,11 @@ public class CourseEnrollmentController extends BaseController {
           Request req = (Request) request;
           Map<String, String[]> queryParams = new HashMap<>(httpRequest.queryString());
           String courseId = req.getRequest().containsKey(JsonKey.COURSE_ID) ? JsonKey.COURSE_ID : JsonKey.COLLECTION_ID;
-          req.getRequest().put(JsonKey.COURSE_ID, req.getRequest().get(courseId));
+          String batchId = (String)req.getRequest().get(JsonKey.BATCH_ID);
+            req.getRequest().put(JsonKey.COURSE_ID, req.getRequest().get(courseId));
           String userId = (String) req.getContext().getOrDefault(JsonKey.REQUESTED_FOR, req.getContext().get(JsonKey.REQUESTED_BY));
           validator.validateRequestedBy(userId);
+          logger.info( ((Request) request).getRequestContext(), " CourseEnrollmentController : Request for un-enroll recieved, UserId : "+  userId +", courseId : "+courseId+ ", batchId:"+batchId);
           req.getRequest().put(JsonKey.USER_ID, userId);
           validator.validateUnenrollCourse(req);
           return null;
@@ -264,5 +268,38 @@ public class CourseEnrollmentController extends BaseController {
     }
     public CompletionStage<Result> getEnrolledCourses_v2(String uid, Http.Request httpRequest) {
         return getEnrolledCourses(uid,httpRequest,"v2");
+    public CompletionStage<Result> enrollProgram(Http.Request httpRequest) {
+        return handleRequest(courseEnrolmentActor, "enrolProgram",
+                httpRequest.body().asJson(),
+                (request) -> {
+                    Request req = (Request) request;
+                    Map<String, String[]> queryParams = new HashMap<>(httpRequest.queryString());
+                    String programId = req.getRequest().containsKey(JsonKey.PROGRAM_ID) ? JsonKey.PROGRAM_ID : JsonKey.COLLECTION_ID;
+                    req.getRequest().put(JsonKey.PROGRAM_ID, req.getRequest().get(programId));
+                    String userId = (String) req.getContext().getOrDefault(JsonKey.REQUESTED_FOR, req.getContext().get(JsonKey.REQUESTED_BY));
+                    req.getRequest().put(JsonKey.IS_ADMIN_API, false);
+                    validator.validateRequestedBy(userId);
+                    validator.validateEnrollProgram(req);
+                    req.getRequest().put(JsonKey.USER_ID, userId);
+                    return null;
+                },
+                getAllRequestHeaders(httpRequest),
+                httpRequest);
+    }
+
+    public CompletionStage<Result> adminEnrollProgram(Http.Request httpRequest) {
+        return handleRequest(courseEnrolmentActor, "enrolProgram",
+                httpRequest.body().asJson(),
+                (request) -> {
+                    Request req = (Request) request;
+                    Map<String, String[]> queryParams = new HashMap<>(httpRequest.queryString());
+                    String programId = req.getRequest().containsKey(JsonKey.PROGRAM_ID) ? JsonKey.PROGRAM_ID : JsonKey.COLLECTION_ID;
+                    req.getRequest().put(JsonKey.PROGRAM_ID, req.getRequest().get(programId));
+                    req.getRequest().put(JsonKey.IS_ADMIN_API, true);
+                    validator.validateEnrollProgram(req);
+                    return null;
+                },
+                getAllRequestHeaders(httpRequest),
+                httpRequest);
     }
 }

@@ -48,6 +48,7 @@ public class CourseBatchDaoImpl implements CourseBatchDao {
     attributeMap.remove(JsonKey.COURSE_ID);
     attributeMap.remove(JsonKey.BATCH_ID);
     attributeMap = CassandraUtil.changeCassandraColumnMapping(attributeMap);
+    CassandraUtil.convertMaptoJsonString(attributeMap, JsonKey.BATCH_ATTRIBUTES_KEY);
     return cassandraOperation.updateRecord(
             requestContext, courseBatchDb.getKeySpace(), courseBatchDb.getTableName(), attributeMap, primaryKey);
   }
@@ -119,5 +120,34 @@ public class CourseBatchDaoImpl implements CourseBatchDao {
         primaryKey,
         CourseJsonKey.CERTIFICATE_TEMPLATES_COLUMN,
         templateId);
+  }
+
+  @Override
+  public CourseBatch readFirstAvailableBatch(String courseId, RequestContext requestContext) {
+    Map<String, Object> primaryKey = new HashMap<>();
+    primaryKey.put(JsonKey.COURSE_ID, courseId);
+    Response courseBatchResult =
+        cassandraOperation.getRecordByIdentifier(
+                requestContext, courseBatchDb.getKeySpace(), courseBatchDb.getTableName(), primaryKey,null);
+    List<Map<String, Object>> courseList =
+        (List<Map<String, Object>>) courseBatchResult.get(JsonKey.RESPONSE);
+    if (courseList.isEmpty()) {
+      throw new ProjectCommonException(
+          ResponseCode.courseDoesNotHaveBatch.getErrorCode(),
+          ResponseCode.courseDoesNotHaveBatch.getErrorMessage(),
+          ResponseCode.CLIENT_ERROR.getResponseCode());
+    } else {
+      for (Map<String, Object> course : courseList) {
+        int status = (int) course.get(JsonKey.STATUS);
+        if (status != 2) {
+          course.remove(JsonKey.PARTICIPANT);
+          return mapper.convertValue(course, CourseBatch.class);
+        }
+      }
+      throw new ProjectCommonException(
+          ResponseCode.courseDoesNotHaveBatch.getErrorCode(),
+          ResponseCode.invalidCourseBatchId.getErrorMessage(),
+          ResponseCode.CLIENT_ERROR.getResponseCode());
+    }
   }
 }

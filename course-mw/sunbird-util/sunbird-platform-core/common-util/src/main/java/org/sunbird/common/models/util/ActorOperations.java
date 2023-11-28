@@ -59,6 +59,7 @@ public enum ActorOperations {
   UNBLOCK_USER("unblockUser"),
   CREATE_BATCH("createBatch"),
   UPDATE_BATCH("updateBatch"),
+  UPDATE_START_BATCHES_STATUS("updateStartBatchesStatus"),
   REMOVE_BATCH("removeBatch"),
   ADD_USER_TO_BATCH("addUserBatch"),
   REMOVE_USER_FROM_BATCH("removeUserFromBatch"),
@@ -175,7 +176,8 @@ public enum ActorOperations {
   GROUP_ACTIVITY_AGGREGATES("groupActivityAggregates"),
   UPDATE_EVENT_SET("updateEventSet"),
   DELETE_EVENT_SET("deleteEventSet"),
-  DELETE_EVENT("deleteEvent");
+  DELETE_EVENT("deleteEvent"),
+  COURSE_BATCH_DATE_NOTIFICATION("courseBatchDateNotification");
 
   private String value;
 
