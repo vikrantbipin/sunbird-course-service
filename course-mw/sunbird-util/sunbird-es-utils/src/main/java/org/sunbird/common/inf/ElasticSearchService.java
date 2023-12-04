@@ -80,6 +80,8 @@ public interface ElasticSearchService {
    */
   public Future<Map<String, Object>> search(RequestContext requestContext, SearchDTO searchDTO, String index);
 
+  public Future<Map<String, Object>> search(RequestContext requestContext, SearchDTO searchDTO, String index,boolean docType);
+
   /**
    * This method will do the health check of elastic search.
    *

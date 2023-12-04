@@ -30,7 +30,7 @@ public class CourseEnrollmentController extends BaseController {
 
   private CourseEnrollmentRequestValidator validator = new CourseEnrollmentRequestValidator();
 
-  public CompletionStage<Result> getEnrolledCourses(String uid, Http.Request httpRequest) {
+  public CompletionStage<Result> getEnrolledCourses(String uid, Http.Request httpRequest,String version) {
       return handleRequest(courseEnrolmentActor, "listEnrol",
           httpRequest.body().asJson(),
           (req) -> {
@@ -45,6 +45,7 @@ public class CourseEnrollmentController extends BaseController {
               validator.validateRequestedBy(userId);
               request.getContext().put(JsonKey.USER_ID, userId);
               request.getRequest().put(JsonKey.USER_ID, userId);
+              request.getContext().put("version", version);
 
               request
                   .getContext()
@@ -262,6 +263,12 @@ public class CourseEnrollmentController extends BaseController {
                 httpRequest);
     }
 
+    public CompletionStage<Result> getEnrolledCourses_v1(String uid, Http.Request httpRequest) {
+        return getEnrolledCourses(uid,httpRequest,"v1");
+    }
+    public CompletionStage<Result> getEnrolledCourses_v2(String uid, Http.Request httpRequest) {
+        return getEnrolledCourses(uid, httpRequest, "v2");
+    }
     public CompletionStage<Result> enrollProgram(Http.Request httpRequest) {
         return handleRequest(courseEnrolmentActor, "enrolProgram",
                 httpRequest.body().asJson(),
