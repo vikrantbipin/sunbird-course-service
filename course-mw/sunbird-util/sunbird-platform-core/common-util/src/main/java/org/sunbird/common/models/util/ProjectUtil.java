@@ -370,7 +370,7 @@ public class ProjectUtil {
    * @author Manzarul
    */
   public enum EsType {
-    compositeSearch("compositesearch_v1"),
+    compositeSearch("compositesearch"),
     course("cbatch"),
     courseBatch("course-batch"),
     content("content"),
