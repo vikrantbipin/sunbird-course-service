@@ -482,10 +482,10 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
                 if (!batchDetails.get(JsonKey.STATUS).equals(null) && !batchDetails.get(JsonKey.STATUS).equals(2)) {
                     val validUserIds = List(requestedBy, requestedFor).filter(p => StringUtils.isNotBlank(p))
                     val primaryUserId = if (StringUtils.isNotBlank(requestedFor)) requestedFor else requestedBy
-                    val userId = inputContent.get(JsonKey.USER_ID).asInstanceOf[String]
-                    if (StringUtils.isBlank(userId))
+                    if (StringUtils.isBlank(inputContent.get(JsonKey.USER_ID).asInstanceOf[String]))
                         inputContent.put(JsonKey.USER_ID, primaryUserId)
-                    if (validUserIds.contains(inputContent.get(JsonKey.USER_ID))) {
+                    val userId = inputContent.get(JsonKey.USER_ID).asInstanceOf[String]
+                    if (validUserIds.contains(userId)) {
                         val contentId = inputContent.get(JsonKey.CONTENT_ID).asInstanceOf[String]
                         val contentIds: util.List[String] = new util.ArrayList[String]()
                         contentIds.add(contentId)
