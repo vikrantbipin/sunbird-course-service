@@ -627,7 +627,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 val courseContent: java.util.HashMap[String, AnyRef] = courseDetails.get(JsonKey.CONTENT).asInstanceOf[java.util.HashMap[String, AnyRef]]
                 val hoursSpentOnCourses: Int = 0
                 if (null != courseContent.get(JsonKey.DURATION)) {
-                    courseContent.get(JsonKey.DURATION).asInstanceOf[String].toInt.asInstanceOf[String].toInt 
+                    courseContent.get(JsonKey.DURATION).asInstanceOf[String].toInt 
                 }
                 hoursSpentOnCompletedCourses += hoursSpentOnCourses
                 val certificatesIssue: java.util.ArrayList[util.Map[String, AnyRef]] = courseDetails.get(JsonKey.ISSUED_CERTIFICATES).asInstanceOf[java.util.ArrayList[util.Map[String, AnyRef]]]
