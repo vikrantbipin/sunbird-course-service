@@ -78,7 +78,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
             } else contentList
             logger.info(requestContext, "Final content-consumption data: " + finalContentList)
             // Update consumption first and then push the assessment events if there are any. This will help us handling failures of max attempts (for assessment content).
-            val contentConsumptionResponse = processContents(finalContentList, requestContext, requestBy, requestedFor,request)
+            val contentConsumptionResponse = processContentsV2(finalContentList, requestContext, requestBy, requestedFor,request)
             val assessmentResponse = processAssessments(assessmentEvents, requestContext, requestBy, requestedFor)
             val finalResponse = assessmentResponse.getOrElse(new Response())
             finalResponse.putAll(contentConsumptionResponse.getOrElse(new Response()).getResult)
@@ -468,5 +468,49 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
             val topic = ProjectUtil.getConfigValue("kafka_enrolment_sync_topic")
             KafkaClient.send(userId, event, topic)
         }
+    }
+
+    def processContentsV2(contentList: java.util.List[java.util.Map[String, AnyRef]], requestContext: RequestContext, requestedBy: String, requestedFor: String, request: Request): Option[Response] = {
+        if (CollectionUtils.isNotEmpty(contentList)) {
+            val responseMessage = new java.util.HashMap[String, AnyRef]()
+            val contentIds: util.List[String] = new util.ArrayList[String]()
+            val inputContent: util.Map[String, AnyRef] = contentList.get(0)
+            val batchId = inputContent.get(JsonKey.BATCH_ID).asInstanceOf[String]
+            val courseId = inputContent.get(JsonKey.COURSE_ID).asInstanceOf[String]
+            val batchDetailsList: List[java.util.Map[String, AnyRef]] = getBatchesV2(requestContext, batchId, courseId, null).toList
+            if (!batchDetailsList.isEmpty) {
+                val batchDetails: java.util.Map[String, AnyRef] = batchDetailsList.get(0)
+                if (null != batchDetails.get(JsonKey.STATUS) && 2 != batchDetails.get(JsonKey.STATUS)) {
+                    val validUserIds = List(requestedBy, requestedFor).filter(p => StringUtils.isNotBlank(p))
+                    val primaryUserId = if (StringUtils.isNotBlank(requestedFor)) requestedFor else requestedBy
+                    if (StringUtils.isBlank(inputContent.get(JsonKey.USER_ID).asInstanceOf[String]))
+                        inputContent.put(JsonKey.USER_ID, primaryUserId)
+                    val userId = inputContent.get(JsonKey.USER_ID).asInstanceOf[String]
+                    if (validUserIds.contains(userId)) {
+                        val contentId = inputContent.get(JsonKey.CONTENT_ID).asInstanceOf[String]
+                        contentIds.add(contentId)
+                        val existingContents = getContentsConsumption(userId, courseId, contentIds, batchId, requestContext).groupBy(x => x.get("contentId").asInstanceOf[String]).map(e => e._1 -> e._2.toList.head).toMap
+                        val existingContent = existingContents.getOrElse(contentId, new java.util.HashMap[String, AnyRef])
+                        val updatedContent = CassandraUtil.changeCassandraColumnMapping(processContentConsumption(inputContent, existingContent, userId))
+                        val updatedContentList: List[java.util.Map[String, AnyRef]] = List(updatedContent)
+                        val fieldList = List(JsonKey.PRIMARYCATEGORY, JsonKey.PARENT_COLLECTIONS)
+                        val contentInfoMap = ContentUtil.getContentReadV3(courseId, fieldList, request.getContext.getOrDefault(JsonKey.HEADER, new util.HashMap[String, String]).asInstanceOf[util.Map[String, String]])
+                        val parentCollectionList = contentInfoMap.get(JsonKey.PARENT_COLLECTIONS).asInstanceOf[java.util.List[String]]
+                        pushInstructionEvent(requestContext, userId, batchId, courseId, updatedContentList, contentInfoMap.get(JsonKey.PRIMARYCATEGORY).asInstanceOf[String], parentCollectionList)
+                        cassandraOperation.batchInsertLogged(requestContext, consumptionDBInfo.getKeySpace, consumptionDBInfo.getTableName, updatedContentList)
+                        val updateData = getLatestReadDetails(userId, batchId, updatedContentList.asInstanceOf[List[java.util.Map[String, AnyRef]]])
+                        cassandraOperation.updateRecordV2(requestContext, enrolmentDBInfo.getKeySpace, enrolmentDBInfo.getTableName, updateData._1, updateData._2, true)
+                    }
+                }
+            } else {
+                logger.info(requestContext, "ContentConsumptionActor: addContent : No batch details found for batchId: " + batchId + "couseId:" + courseId)
+                throw new ProjectCommonException(ResponseCode.invalidRequestData.getErrorCode,
+                    s"""No batch details found for, batchId: $batchId, courseId: $courseId""", ResponseCode.CLIENT_ERROR.getResponseCode)
+            }
+            contentIds.map(id => responseMessage.put(id, JsonKey.SUCCESS))
+            val response = new Response()
+            response.putAll(responseMessage)
+            Option(response)
+        } else None
     }
 }
