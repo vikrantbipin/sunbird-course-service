@@ -959,6 +959,7 @@ public final class JsonKey {
   public static final String certificateImgUrl = "certificateImgUrl";
   public static final String SUNBIRD_RESET_PASS_MAIL_SUBJECT = "sunbird_reset_pass_mail_subject";
   public static final String X_AUTHENTICATED_USER_TOKEN = "x-authenticated-user-token";
+  public static final String X_AUTHENTICATED_USER_TOKEN_CAMEL = "X-Authenticated-User-Token";
   public static final String X_SOURCE_USER_TOKEN = "x-source-user-token";
   public static final String SUNBIRD_SUBDOMAIN_KEYCLOAK_BASE_URL =
       "sunbird_subdomain_keycloak_base_url";
@@ -1078,6 +1079,9 @@ public final class JsonKey {
   public static final String CURRENT_OFFSET = "currentOffSet";
   public static final String SECURE_SETTINGS = "secureSettings";
   public static final String X_AUTH_USER_ORG_ID = "x-authenticated-user-orgid";
+
+  public static final String X_AUTH_USER_ORG_ID_CAMEL = "X-Authenticated-User-Orgid";
+
   public static final String CURRENT_BATCH_SIZE = "currentBatchSize";
   public static final String PRIMARYCATEGORY = "primaryCategory";
   public static final String PRIMARY_CATEGORY_BLENDED_PROGRAM = "Blended Program";

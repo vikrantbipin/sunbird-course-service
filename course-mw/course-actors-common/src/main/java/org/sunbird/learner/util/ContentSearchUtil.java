@@ -42,11 +42,17 @@ public class ContentSearchUtil {
   private static Map<String, String> getUpdatedHeaders(Map<String, String> allHeaders) {
     Map<String, String> headers = new HashMap<String, String>();
     if (allHeaders != null) {
-      if (allHeaders.containsKey(JsonKey.X_AUTHENTICATED_USER_TOKEN)) {
+      if (allHeaders.containsKey(JsonKey.X_AUTHENTICATED_USER_TOKEN) ) {
         headers.put(JsonKey.X_AUTHENTICATED_USER_TOKEN, allHeaders.get(JsonKey.X_AUTHENTICATED_USER_TOKEN));
+      }
+      if (allHeaders.containsKey(JsonKey.X_AUTHENTICATED_USER_TOKEN_CAMEL) ) {
+        headers.put(JsonKey.X_AUTHENTICATED_USER_TOKEN, allHeaders.get(JsonKey.X_AUTHENTICATED_USER_TOKEN_CAMEL));
       }
       if (allHeaders.containsKey(JsonKey.X_AUTH_USER_ORG_ID)) {
         headers.put(JsonKey.X_AUTH_USER_ORG_ID, allHeaders.get(JsonKey.X_AUTH_USER_ORG_ID));
+      }
+      if (allHeaders.containsKey(JsonKey.X_AUTH_USER_ORG_ID_CAMEL)) {
+        headers.put(JsonKey.X_AUTH_USER_ORG_ID, allHeaders.get(JsonKey.X_AUTH_USER_ORG_ID_CAMEL));
       }
     }
     headers.put(
@@ -110,17 +116,13 @@ public class ContentSearchUtil {
 
   public static Map<String, Object> searchContentSync(
           RequestContext requestContext, String urlQueryString, String queryRequestBody, Map<String, String> headers) {
-
-    logger.error(requestContext,"#TroubleShoot : Before Request Url : "+urlQueryString + " ,Headers : " + headers +",body : "+queryRequestBody,null);
     Unirest.clearDefaultHeaders();
     String urlString =
         StringUtils.isNotBlank(urlQueryString)
             ? contentSearchURL + urlQueryString
             : contentSearchURL;
-
     BaseRequest request =
         Unirest.post(urlString).headers(getUpdatedHeaders(headers)).body(queryRequestBody);
-    logger.error(requestContext,"#TroubleShoot : After Request Url : "+urlString + " ,Headers : " + request.getHttpRequest().getHeaders() +",body : "+queryRequestBody,null);
     try {
       HttpResponse<JsonNode> response = RestUtil.execute(request);
       if (RestUtil.isSuccessful(response)) {
