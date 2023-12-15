@@ -118,6 +118,7 @@ public class ContentSearchUtil {
 
     BaseRequest request =
         Unirest.post(urlString).headers(getUpdatedHeaders(headers)).body(queryRequestBody);
+    logger.error(requestContext,"Request Url : "+urlString + " ,Headers : " + request.getHttpRequest().getHeaders() +",body : "+queryRequestBody,null);
     try {
       HttpResponse<JsonNode> response = RestUtil.execute(request);
       if (RestUtil.isSuccessful(response)) {
