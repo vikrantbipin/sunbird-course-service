@@ -110,6 +110,8 @@ public class ContentSearchUtil {
 
   public static Map<String, Object> searchContentSync(
           RequestContext requestContext, String urlQueryString, String queryRequestBody, Map<String, String> headers) {
+
+    logger.error(requestContext,"#TroubleShoot : Before Request Url : "+urlQueryString + " ,Headers : " + headers +",body : "+queryRequestBody,null);
     Unirest.clearDefaultHeaders();
     String urlString =
         StringUtils.isNotBlank(urlQueryString)
@@ -118,7 +120,7 @@ public class ContentSearchUtil {
 
     BaseRequest request =
         Unirest.post(urlString).headers(getUpdatedHeaders(headers)).body(queryRequestBody);
-    logger.error(requestContext,"Request Url : "+urlString + " ,Headers : " + request.getHttpRequest().getHeaders() +",body : "+queryRequestBody,null);
+    logger.error(requestContext,"#TroubleShoot : After Request Url : "+urlString + " ,Headers : " + request.getHttpRequest().getHeaders() +",body : "+queryRequestBody,null);
     try {
       HttpResponse<JsonNode> response = RestUtil.execute(request);
       if (RestUtil.isSuccessful(response)) {
