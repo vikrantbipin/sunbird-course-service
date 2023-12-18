@@ -116,6 +116,7 @@ public class ContentSearchUtil {
 
   public static Map<String, Object> searchContentSync(
           RequestContext requestContext, String urlQueryString, String queryRequestBody, Map<String, String> headers) {
+    logger.error(requestContext,"#TroubleShoot Headers  :- "+headers,null);
     Unirest.clearDefaultHeaders();
     String urlString =
         StringUtils.isNotBlank(urlQueryString)
