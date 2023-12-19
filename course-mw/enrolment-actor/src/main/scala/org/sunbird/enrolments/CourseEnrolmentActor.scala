@@ -3,7 +3,7 @@ package org.sunbird.enrolments
 import java.sql.Timestamp
 import java.text.{MessageFormat, SimpleDateFormat}
 import java.time.format.DateTimeFormatter
-import java.time.{LocalDate, LocalDateTime, LocalTime, ZoneId}
+import java.time.{LocalDate, LocalDateTime, LocalTime, Month, ZoneId}
 import java.util
 import java.util.{Comparator, Date, UUID}
 import akka.actor.ActorRef
@@ -639,6 +639,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         var certificateIssued: Int = 0
         var coursesInProgress: Int = 0
         var hoursSpentOnCompletedCourses: Int = 0
+        var karmaPoints : Int = 0;
         finalEnrolment.foreach(courseDetails => {
             val courseStatus = courseDetails.get(JsonKey.STATUS)
             if (courseStatus != 2) {
@@ -651,14 +652,25 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 }
                 hoursSpentOnCompletedCourses += hoursSpentOnCourses
                 val certificatesIssue: java.util.ArrayList[util.Map[String, AnyRef]] = courseDetails.get(JsonKey.ISSUED_CERTIFICATES).asInstanceOf[java.util.ArrayList[util.Map[String, AnyRef]]]
-                if (certificatesIssue.nonEmpty)
+                if (certificatesIssue.nonEmpty) {
                     certificateIssued += 1
+                    if (karmaPoints < 40 &&  courseDetails.get(JsonKey.COMPLETED_ON) != null) {
+                        val completeDate: Date = courseDetails.get(JsonKey.COMPLETED_ON).asInstanceOf[Date]
+                        val localDate = completeDate.toInstant.atZone(java.time.ZoneId.systemDefault).toLocalDate
+                        val month = localDate.getMonth
+                        if ((month eq Month.JANUARY) && (localDate.getYear eq 2024) ||
+                          (month eq Month.FEBRUARY) && (localDate.getYear eq 2024) ||
+                          (month eq Month.DECEMBER) && (localDate.getYear eq 2023))
+                            karmaPoints = karmaPoints + 10
+                    }
+                }
             }
         });
         val enrolmentCourseDetails = new util.HashMap[String, Int]()
         enrolmentCourseDetails.put(JsonKey.TIME_SPENT_ON_COMPLETED_COURSES, hoursSpentOnCompletedCourses)
         enrolmentCourseDetails.put(JsonKey.CERITFICATES_ISSUED, certificateIssued)
         enrolmentCourseDetails.put(JsonKey.COURSES_IN_PROGRESS, coursesInProgress)
+        enrolmentCourseDetails.put(JsonKey.KARMA_POINTS, karmaPoints)
         enrolmentCourseDetails
     }
 }
