@@ -658,9 +658,9 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                         val completeDate: Date = courseDetails.get(JsonKey.COMPLETED_ON).asInstanceOf[Date]
                         val localDate = completeDate.toInstant.atZone(java.time.ZoneId.systemDefault).toLocalDate
                         val month = localDate.getMonth
-                        if ((month eq Month.JANUARY) && (localDate.getYear eq 2024) ||
-                          (month eq Month.FEBRUARY) && (localDate.getYear eq 2024) ||
-                          (month eq Month.DECEMBER) && (localDate.getYear eq 2023))
+                        if ((month == Month.JANUARY && localDate.getYear == 2024) ||
+                          (month == Month.FEBRUARY && localDate.getYear == 2024) ||
+                          (month == Month.DECEMBER && localDate.getYear == 2023))
                             karmaPoints = karmaPoints + 10
                     }
                 }
