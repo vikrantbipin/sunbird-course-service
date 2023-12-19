@@ -451,9 +451,11 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 if (enrolmentList != null) {
                     allEnrolledCourses.addAll(enrolmentList)
                 }
-                val secureCourseEnrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails(activeEnrolments, secureCourseIds, request, true)
-                if (secureCourseEnrolmentList != null) {
-                    allEnrolledCourses.addAll(secureCourseEnrolmentList)
+                if(CollectionUtils.isNotEmpty(secureCourseIds)){
+                    val secureCourseEnrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails(activeEnrolments, secureCourseIds, request, true)
+                    if (secureCourseEnrolmentList != null) {
+                        allEnrolledCourses.addAll(secureCourseEnrolmentList)
+                    }
                 }
                 }
                 else {
