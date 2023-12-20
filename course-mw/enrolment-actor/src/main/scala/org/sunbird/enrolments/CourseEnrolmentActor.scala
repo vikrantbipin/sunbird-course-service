@@ -447,9 +447,11 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 val allEnrolledCourses = new java.util.ArrayList[java.util.Map[String, AnyRef]]
                 val version = request.getContext.get("version")
                 if(version.equals("v1")) {
-                val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails(activeEnrolments, courseIds, request, false)
-                if (enrolmentList != null) {
-                    allEnrolledCourses.addAll(enrolmentList)
+                if(CollectionUtils.isNotEmpty(courseIds)){
+                    val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails(activeEnrolments, courseIds, request, false)
+                    if (enrolmentList != null) {
+                        allEnrolledCourses.addAll(enrolmentList)
+                    }
                 }
                 if(CollectionUtils.isNotEmpty(secureCourseIds)){
                     val secureCourseEnrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails(activeEnrolments, secureCourseIds, request, true)
