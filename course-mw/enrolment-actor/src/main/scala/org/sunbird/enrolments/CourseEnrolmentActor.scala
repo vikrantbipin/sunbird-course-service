@@ -406,19 +406,21 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def getCachedEnrolmentList(userId: String, handleEmptyCache: () => Response): Response = {
         val key = getCacheKey(userId)
+        logger.info(request.getRequestContext, "CourseEnrolmentActor::getCachedEnrolmentList :: fetching data from redis... key: " + key)
         val responseString = cacheUtil.get(key)
         if (StringUtils.isNotBlank(responseString)) {
             JsonUtil.deserialize(responseString, classOf[Response])
         } else {
             val response = handleEmptyCache()
             val responseString = JsonUtil.serialize(response)
+            logger.info(request.getRequestContext, "CourseEnrolmentActor::getCachedEnrolmentList :: setting data to redis... key: " + key)
             cacheUtil.set(key, responseString, ttl)
             response
         }
     }
 
     def getEnrolmentList(request: Request, userId: String, courseIdList: java.util.List[String]): Response = {
-        logger.info(request.getRequestContext,"CourseEnrolmentActor :: getCachedEnrolmentList :: fetching data from cassandra with userId " + userId)
+        logger.info(request.getRequestContext,"CourseEnrolmentActor :: getEnrolmentList :: fetching data from cassandra with userId " + userId)
         //ContentUtil.getAllContent(PropertiesCache.getInstance.getProperty(JsonKey.PAGE_SIZE_CONTENT_FETCH).toInt)
         val activeEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getActiveEnrollments( userId, courseIdList, request.getRequestContext)
         val enrolments: java.util.List[java.util.Map[String, AnyRef]] = {
