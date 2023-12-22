@@ -415,6 +415,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             val responseString = JsonUtil.serialize(response)
             logger.info(request.getRequestContext, "CourseEnrolmentActor::getCachedEnrolmentList :: setting data to redis... key: " + key)
             cacheUtil.set(key, responseString, ttl)
+            logger.info(request.getRequestContext, "CourseEnrolmentActor::getCachedEnrolmentList :: value from Cache :: " + cacheUtil.get(key))
             response
         }
     }
