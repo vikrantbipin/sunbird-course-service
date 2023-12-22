@@ -425,7 +425,7 @@ public class ElasticSearchRestHighImpl implements ElasticSearchService {
     if (null != searchDTO.getFacets() && !searchDTO.getFacets().isEmpty()) {
       searchSourceBuilder = addAggregations(requestContext, searchSourceBuilder, searchDTO.getFacets());
     }
-    logger.info(requestContext, 
+    logger.debug(requestContext, 
         "ElasticSearchRestHighImpl:search: calling search builder======"
             + searchSourceBuilder.toString());
 
