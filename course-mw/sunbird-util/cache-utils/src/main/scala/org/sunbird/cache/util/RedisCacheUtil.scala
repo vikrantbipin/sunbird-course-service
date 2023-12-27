@@ -99,7 +99,7 @@ class RedisCacheUtil {
             jedis.del(key)
             jedis.set(key, data)
             if (ttl > 0) jedis.expire(key, ttl)
-            logger.info(null, "RedisCacheUtil::set.. key: " + key + ", index :", index)
+            logger.info(null, "RedisCacheUtil::set.. key: " + key + ", index :" + index)
         } catch {
             case e: Exception =>
                 logger.error(null, "Exception Occurred While Saving String Data to Redis Cache for Key : " + key + "| Exception is:", e)
