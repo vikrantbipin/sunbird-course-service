@@ -147,6 +147,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             val response = if (isCacheEnabled && request.getContext.get("cache").asInstanceOf[Boolean])
                 getCachedEnrolmentList(userId, () => getEnrolmentList(request, userId, courseIdList)) else getEnrolmentList(request, userId, courseIdList)
             sender().tell(response, self)
+            logger.info(request.getRequestContext,"CourseEnrolmentActor::list :: response" + response)
         }catch {
             case e: Exception =>
                 logger.error(request.getRequestContext, "Exception in enrolment list : user ::" + userId + "| Exception is:"+e.getMessage, e)
@@ -406,16 +407,17 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def getCachedEnrolmentList(userId: String, handleEmptyCache: () => Response): Response = {
         val key = getCacheKey(userId)
-        logger.info(request.getRequestContext, "CourseEnrolmentActor::getCachedEnrolmentList :: fetching data from redis... key: " + key)
+        logger.info(null,"CourseEnrolmentActor::getCachedEnrolmentList :: fetching data from redis... key: " + key)
         val responseString = cacheUtil.get(key)
+        logger.info(null,"CourseEnrolmentActor::getCachedEnrolmentList :: data for key: " + key + " data: " + responseString + ";")
         if (StringUtils.isNotBlank(responseString)) {
             JsonUtil.deserialize(responseString, classOf[Response])
         } else {
             val response = handleEmptyCache()
             val responseString = JsonUtil.serialize(response)
-            logger.info(request.getRequestContext, "CourseEnrolmentActor::getCachedEnrolmentList :: setting data to redis... key: " + key)
+            logger.info(null, "CourseEnrolmentActor::getCachedEnrolmentList :: setting data to redis... key: " + key)
             cacheUtil.set(key, responseString, ttl)
-            logger.info(request.getRequestContext, "CourseEnrolmentActor::getCachedEnrolmentList :: value from Cache :: " + cacheUtil.get(key))
+            logger.info(null, "CourseEnrolmentActor::getCachedEnrolmentList :: value from Cache :: " + cacheUtil.get(key))
             response
         }
     }
@@ -469,6 +471,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val sortedEnrolment = enrolments.filter(ae => ae.get("lastContentAccessTime")!=null).toList.sortBy(_.get("lastContentAccessTime").asInstanceOf[Date])(Ordering[Date].reverse).toList
         val finalEnrolments = sortedEnrolment ++ enrolments.asScala.filter(e => e.get("lastContentAccessTime")==null).toList
         val userCourseEnrolmentInfo = getUserEnrolmentCourseInfo(finalEnrolments)
+        logger.info(request.getRequestContext,"CourseEnrolmentActor :: getEnrolmentList :: updated Course Enrollment List: " + finalEnrolments.asJava + "size is:" + finalEnrolments.asJava.size())
         resp.put(JsonKey.USER_COURSE_ENROLMENT_INFO, userCourseEnrolmentInfo)
         resp.put(JsonKey.COURSES, finalEnrolments.asJava)
         resp
