@@ -28,7 +28,7 @@ import org.sunbird.cache.util.RedisCacheUtil
 import org.sunbird.cloud.storage.util.JSONUtils.mapper
 import org.sunbird.common.CassandraUtil
 import org.sunbird.common.models.util.ProjectUtil
-import org.sunbird.kafka.client.KafkaClient
+import org.sunbird.kafka.client.{InstructionEventGenerator, KafkaClient}
 import org.sunbird.learner.actors.course.dao.impl.ContentHierarchyDaoImpl
 import org.sunbird.models.batch.user.BatchUser
 import org.sunbird.telemetry.util.TelemetryUtil
@@ -102,6 +102,14 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             sender().tell(successResponse(), self)
             generateTelemetryAudit(userId, courseId, batchId, data, "enrol", JsonKey.CREATE, request.getContext)
             notifyUser(userId, batchData, JsonKey.ADD)
+            val dataMap = new java.util.HashMap[String, AnyRef]
+            val requestMap = new java.util.HashMap[String, AnyRef]
+            requestMap.put(JsonKey.COURSE_ID,courseId)
+            requestMap.put(JsonKey.USER_ID,userId)
+            requestMap.put(JsonKey.BATCH_ID,batchId)
+            dataMap.put("edata",requestMap)
+            val topic = ProjectUtil.getConfigValue("kafka_user_enrolment_event_topic")
+            InstructionEventGenerator.createCourseEnrolmentEvent("", topic, dataMap)
         } else {
             ProjectCommonException.throwClientErrorException(ResponseCode.accessDeniedToEnrolOrUnenrolCourse, courseId)
         }
