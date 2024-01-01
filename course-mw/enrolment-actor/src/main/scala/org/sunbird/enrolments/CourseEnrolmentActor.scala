@@ -616,7 +616,6 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             upsertEnrollment(userId, courseId, batchId, data, dataBatch, (null == enrolmentData), request.getRequestContext)
             logger.info(request.getRequestContext, "CourseEnrolmentActor :: enroll :: Deleting redis for key " + getCacheKey(userId))
             cacheUtil.delete(getCacheKey(userId))
-            sender().tell(successResponse(), self)
             generateTelemetryAudit(userId, courseId, batchId, data, "enrol", JsonKey.CREATE, request.getContext)
             notifyUser(userId, batchData, JsonKey.ADD)
         } catch {
