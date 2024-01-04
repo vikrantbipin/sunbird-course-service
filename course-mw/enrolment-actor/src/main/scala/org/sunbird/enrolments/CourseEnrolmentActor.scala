@@ -8,7 +8,10 @@ import java.util
 import java.util.{Comparator, Date, UUID}
 import akka.actor.ActorRef
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.sunbird.common.models.util.JsonKey
+import org.sunbird.learner.util.Util
 
+import scala.collection.JavaConverters._
 import javax.inject.{Inject, Named}
 import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.apache.commons.lang3.StringUtils
@@ -25,16 +28,15 @@ import org.sunbird.learner.util.{ContentCacheHandler, ContentSearchUtil, Content
 import org.sunbird.models.course.batch.CourseBatch
 import org.sunbird.models.user.courses.UserCourses
 import org.sunbird.cache.util.RedisCacheUtil
-import org.sunbird.cloud.storage.util.JSONUtils.mapper
 import org.sunbird.common.CassandraUtil
 import org.sunbird.common.models.util.ProjectUtil
+import org.sunbird.helper.ServiceFactory
 import org.sunbird.kafka.client.{InstructionEventGenerator, KafkaClient}
 import org.sunbird.learner.actors.course.dao.impl.ContentHierarchyDaoImpl
 import org.sunbird.models.batch.user.BatchUser
 import org.sunbird.telemetry.util.TelemetryUtil
 
 import scala.collection.JavaConversions._
-import scala.collection.JavaConverters._
 
 class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") courseBatchNotificationActorRef: ActorRef
                                     )(implicit val  cacheUtil: RedisCacheUtil ) extends BaseEnrolmentActor {
@@ -56,7 +58,8 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
     val redisCollectionIndex = if (StringUtils.isNotBlank(ProjectUtil.getConfigValue("redis_collection_index")))
         (ProjectUtil.getConfigValue("redis_collection_index")).toInt else 10
     private val DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd")
-
+    private val pageDbInfo = Util.dbInfoMap.get(JsonKey.USER_KARMA_POINTS_DB)
+    private val cassandraOperation = ServiceFactory.getInstance
     override def preStart { println("Starting CourseEnrolmentActor") }
 
     override def postStop {
@@ -114,7 +117,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             ProjectCommonException.throwClientErrorException(ResponseCode.accessDeniedToEnrolOrUnenrolCourse, courseId)
         }
     }
-    
+
     def unEnroll(request:Request): Unit = {
         val courseId: String = request.get(JsonKey.COURSE_ID).asInstanceOf[String]
         val userId: String = request.get(JsonKey.USER_ID).asInstanceOf[String]
@@ -287,15 +290,15 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             new java.util.ArrayList[util.Map[String, AnyRef]]()
         }
     }
-    
-    
+
+
     def validateEnrolment(batchData: CourseBatch, enrolmentData: UserCourses, isEnrol: Boolean): Unit = {
         if(null == batchData) ProjectCommonException.throwClientErrorException(ResponseCode.invalidCourseBatchId, ResponseCode.invalidCourseBatchId.getErrorMessage)
 
         if(!(EnrolmentType.inviteOnly.getVal.equalsIgnoreCase(batchData.getEnrollmentType) ||
           EnrolmentType.open.getVal.equalsIgnoreCase(batchData.getEnrollmentType)))
             ProjectCommonException.throwClientErrorException(ResponseCode.enrollmentTypeValidation, ResponseCode.enrollmentTypeValidation.getErrorMessage)
-        
+
         if((2 == batchData.getStatus) || (null != batchData.getEndDate && LocalDateTime.now().isAfter(LocalDate.parse(DATE_FORMAT.format(batchData.getEndDate), DateTimeFormatter.ofPattern("yyyy-MM-dd")).atTime(LocalTime.MAX))))
             ProjectCommonException.throwClientErrorException(ResponseCode.courseBatchAlreadyCompleted, ResponseCode.courseBatchAlreadyCompleted.getErrorMessage)
 
@@ -473,7 +476,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val resp: Response = new Response()
         val sortedEnrolment = enrolments.filter(ae => ae.get("lastContentAccessTime")!=null).toList.sortBy(_.get("lastContentAccessTime").asInstanceOf[Date])(Ordering[Date].reverse).toList
         val finalEnrolments = sortedEnrolment ++ enrolments.asScala.filter(e => e.get("lastContentAccessTime")==null).toList
-        val userCourseEnrolmentInfo = getUserEnrolmentCourseInfo(finalEnrolments)
+        val userCourseEnrolmentInfo = getUserEnrolmentCourseInfo(finalEnrolments, request, userId);
         resp.put(JsonKey.USER_COURSE_ENROLMENT_INFO, userCourseEnrolmentInfo)
         resp.put(JsonKey.COURSES, finalEnrolments.asJava)
         resp
@@ -635,14 +638,11 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         false;
     }
 
-    def getUserEnrolmentCourseInfo(finalEnrolment: List[util.Map[String, AnyRef]]) = {
+    def getUserEnrolmentCourseInfo(finalEnrolment: List[util.Map[String, AnyRef]], actorMessage: Request, userId: String) = {
         var certificateIssued: Int = 0
         var coursesInProgress: Int = 0
         var hoursSpentOnCompletedCourses: Int = 0
-        var karmaPoints_Jan : Int = 0;
-        var karmaPoints_Feb : Int = 0;
-        var karmaPoints_Dec : Int = 0;
-        finalEnrolment.foreach(courseDetails => {
+        finalEnrolment.foreach { courseDetails =>
             val courseStatus = courseDetails.get(JsonKey.STATUS)
             if (courseStatus != 2) {
                 coursesInProgress += 1
@@ -650,36 +650,42 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 val courseContent: java.util.HashMap[String, AnyRef] = courseDetails.get(JsonKey.CONTENT).asInstanceOf[java.util.HashMap[String, AnyRef]]
                 var hoursSpentOnCourses: Int = 0
                 if (null != courseContent.get(JsonKey.DURATION)) {
-                    hoursSpentOnCourses = courseContent.get(JsonKey.DURATION).asInstanceOf[String].toInt 
+                    hoursSpentOnCourses = courseContent.get(JsonKey.DURATION).asInstanceOf[String].toInt
                 }
                 hoursSpentOnCompletedCourses += hoursSpentOnCourses
                 val certificatesIssue: java.util.ArrayList[util.Map[String, AnyRef]] = courseDetails.get(JsonKey.ISSUED_CERTIFICATES).asInstanceOf[java.util.ArrayList[util.Map[String, AnyRef]]]
                 if (certificatesIssue.nonEmpty) {
                     certificateIssued += 1
-                    if (courseDetails.get(JsonKey.COMPLETED_ON) != null) {
-                        val completeDate: Date = courseDetails.get(JsonKey.COMPLETED_ON).asInstanceOf[Date]
-                        val localDate = completeDate.toInstant.atZone(java.time.ZoneId.systemDefault).toLocalDate
-                        val month = localDate.getMonth
-                        if (karmaPoints_Dec < 20 &&  month == Month.DECEMBER && localDate.getYear == 2023) {
-                            karmaPoints_Dec = karmaPoints_Dec + 5
-                        }
-                        else if (karmaPoints_Jan < 20 && (month == Month.JANUARY && localDate.getYear == 2024)) {
-                            karmaPoints_Jan = karmaPoints_Jan+5
-                        }
-                        else if (karmaPoints_Feb < 20 && month == Month.FEBRUARY && localDate.getYear == 2024) {
-                             karmaPoints_Feb = karmaPoints_Feb+5
-                         }
-                    }
                 }
             }
-        });
+        }
+        val userKarmaPoints = cassandraOperation.getRecordsByProperty(
+            actorMessage.getRequestContext,
+            pageDbInfo.getKeySpace,
+            pageDbInfo.getTableName,
+            JsonKey.USER_ID,
+            userId,
+            util.Arrays.asList(JsonKey.USER_KARMA_POINTS)
+        )
+        var dbResponse: java.util.List[util.Map[String, AnyRef]] = userKarmaPoints.get(JsonKey.RESPONSE).asInstanceOf[java.util.List[util.Map[String, AnyRef]]]
+        // dbResponse is a list of maps to extract points for each record
+        val userKarmaPointsList: List[Int] = dbResponse.asScala.map { record =>
+            record.get(JsonKey.USER_KARMA_POINTS) match {
+                case i: Integer => i.toInt
+                case _ => 0 // Default value if "points" key is not found or the associated value is not an integer
+            }
+        }(collection.breakOut)
+        // Sum up user karma points
+        val userKarmaPointsSum: Int = userKarmaPointsList.sum
         val enrolmentCourseDetails = new util.HashMap[String, Int]()
         enrolmentCourseDetails.put(JsonKey.TIME_SPENT_ON_COMPLETED_COURSES, hoursSpentOnCompletedCourses)
         enrolmentCourseDetails.put(JsonKey.CERITFICATES_ISSUED, certificateIssued)
         enrolmentCourseDetails.put(JsonKey.COURSES_IN_PROGRESS, coursesInProgress)
-        enrolmentCourseDetails.put(JsonKey.KARMA_POINTS, karmaPoints_Dec+karmaPoints_Jan+karmaPoints_Feb)
+        enrolmentCourseDetails.put(JsonKey.KARMA_POINTS, userKarmaPointsSum)
         enrolmentCourseDetails
     }
+
 }
+
 
 
