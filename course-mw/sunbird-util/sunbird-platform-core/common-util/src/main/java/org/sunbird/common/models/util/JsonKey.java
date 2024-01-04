@@ -1125,6 +1125,8 @@ public final class JsonKey {
   public static final String COURSES_IN_PROGRESS = "coursesInProgress";
   public static final String SEARCH_IDENTIFIER_MAX_SIZE ="search_identifier_max_size";
   public static final String KARMA_POINTS = "karmaPoints";
+  public static final String USER_KARMA_POINTS_DB = "user_karma_points";
+  public static final String USER_KARMA_POINTS = "points";
 
   private JsonKey() {}
 }
