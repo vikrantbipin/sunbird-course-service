@@ -665,23 +665,24 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             pageDbInfo.getTableName,
             JsonKey.USER_ID,
             userId,
-            util.Arrays.asList(JsonKey.USER_KARMA_POINTS)
+            util.Arrays.asList(JsonKey.USER_KARMA_TOTAL_POINTS)
         )
         var dbResponse: java.util.List[util.Map[String, AnyRef]] = userKarmaPoints.get(JsonKey.RESPONSE).asInstanceOf[java.util.List[util.Map[String, AnyRef]]]
         // dbResponse is a list of maps to extract points for each record
-        val userKarmaPointsList: List[Int] = dbResponse.asScala.map { record =>
-            record.get(JsonKey.USER_KARMA_POINTS) match {
-                case i: Integer => i.toInt
-                case _ => 0 // Default value if "points" key is not found or the associated value is not an integer
-            }
-        }(collection.breakOut)
-        // Sum up user karma points
-        val userKarmaPointsSum: Int = userKarmaPointsList.sum
-        val enrolmentCourseDetails = new util.HashMap[String, Int]()
+        val totalUserKarmaPoints: Int = dbResponse.get(0).get(JsonKey.USER_KARMA_TOTAL_POINTS) match  {
+            case totalPoints: Integer => totalPoints.toInt
+            case _ => 0 // Default value if "total_points" key is not found or the associated value is not an integer
+        }
+        val addInfo: String = dbResponse.get(0).get(JsonKey.ADD_INFO) match {
+            case info: String => info
+            case _ => "" // Default value if "addinfo" key is not found or the associated value is not a string
+        }
+        val enrolmentCourseDetails = new util.HashMap[String, AnyRef]()
         enrolmentCourseDetails.put(JsonKey.TIME_SPENT_ON_COMPLETED_COURSES, hoursSpentOnCompletedCourses)
         enrolmentCourseDetails.put(JsonKey.CERITFICATES_ISSUED, certificateIssued)
         enrolmentCourseDetails.put(JsonKey.COURSES_IN_PROGRESS, coursesInProgress)
-        enrolmentCourseDetails.put(JsonKey.KARMA_POINTS, userKarmaPointsSum)
+        enrolmentCourseDetails.put(JsonKey.KARMA_POINTS, totalUserKarmaPoints)
+        enrolmentCourseDetails.put(JsonKey.ADD_INFO, addInfo)
         enrolmentCourseDetails
     }
 
