@@ -37,6 +37,7 @@ import org.sunbird.models.batch.user.BatchUser
 import org.sunbird.telemetry.util.TelemetryUtil
 
 import scala.collection.JavaConversions._
+import scala.util.Try
 
 class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") courseBatchNotificationActorRef: ActorRef
                                     )(implicit val  cacheUtil: RedisCacheUtil ) extends BaseEnrolmentActor {
@@ -677,12 +678,13 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             case info: String => info
             case _ => "" // Default value if "addinfo" key is not found or the associated value is not a string
         }
-        val enrolmentCourseDetails = new util.HashMap[String, AnyRef]()
+        val addInfoAsInt: Int = Try(addInfo.toInt).getOrElse(0)
+        val enrolmentCourseDetails = new util.HashMap[String, Int]()
         enrolmentCourseDetails.put(JsonKey.TIME_SPENT_ON_COMPLETED_COURSES, hoursSpentOnCompletedCourses)
         enrolmentCourseDetails.put(JsonKey.CERITFICATES_ISSUED, certificateIssued)
         enrolmentCourseDetails.put(JsonKey.COURSES_IN_PROGRESS, coursesInProgress)
         enrolmentCourseDetails.put(JsonKey.KARMA_POINTS, totalUserKarmaPoints)
-        enrolmentCourseDetails.put(JsonKey.ADD_INFO, addInfo)
+        enrolmentCourseDetails.put(JsonKey.ADD_INFO, addInfoAsInt)
         enrolmentCourseDetails
     }
 
