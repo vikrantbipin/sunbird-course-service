@@ -37,7 +37,7 @@ import org.sunbird.models.batch.user.BatchUser
 import org.sunbird.telemetry.util.TelemetryUtil
 
 import scala.collection.JavaConversions._
-import scala.util.Try
+import com.fasterxml.jackson.module.scala.DefaultScalaModule
 
 class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") courseBatchNotificationActorRef: ActorRef
                                     )(implicit val  cacheUtil: RedisCacheUtil ) extends BaseEnrolmentActor {
@@ -643,6 +643,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         var certificateIssued: Int = 0
         var coursesInProgress: Int = 0
         var hoursSpentOnCompletedCourses: Int = 0
+        var addInfo: util.Map[String, AnyRef] = null
         finalEnrolment.foreach { courseDetails =>
             val courseStatus = courseDetails.get(JsonKey.STATUS)
             if (courseStatus != 2) {
@@ -666,28 +667,27 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             pageDbInfo.getTableName,
             JsonKey.USER_ID,
             userId,
-            util.Arrays.asList(JsonKey.USER_KARMA_TOTAL_POINTS)
+            util.Arrays.asList(JsonKey.USER_KARMA_TOTAL_POINTS, JsonKey.ADD_INFO)
         )
-        var dbResponse: java.util.List[util.Map[String, AnyRef]] = userKarmaPoints.get(JsonKey.RESPONSE).asInstanceOf[java.util.List[util.Map[String, AnyRef]]]
         // dbResponse is a list of maps to extract points for each record
-        val totalUserKarmaPoints: Int = dbResponse.get(0).get(JsonKey.USER_KARMA_TOTAL_POINTS) match  {
-            case totalPoints: Integer => totalPoints.toInt
-            case _ => 0 // Default value if "total_points" key is not found or the associated value is not an integer
+        val dbResponse: java.util.List[util.Map[String, AnyRef]] = userKarmaPoints.get(JsonKey.RESPONSE).asInstanceOf[java.util.List[util.Map[String, AnyRef]]]
+        val totalUserKarmaPoints: Int = dbResponse.asScala.collectFirst {
+            case record: util.Map[String, AnyRef] if record.containsKey(JsonKey.USER_KARMA_TOTAL_POINTS) =>
+                record.get(JsonKey.USER_KARMA_TOTAL_POINTS).asInstanceOf[Integer].toInt
+        }.getOrElse(0)
+        val addInfoString: String = dbResponse.get(0).get(JsonKey.ADD_INFO).asInstanceOf[String]
+        val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
+        if (addInfoString != null) {
+            addInfo = objectMapper.readValue(addInfoString, classOf[util.Map[String, AnyRef]])
         }
-        val addInfo: String = dbResponse.get(0).get(JsonKey.ADD_INFO) match {
-            case info: String => info
-            case _ => "" // Default value if "addinfo" key is not found or the associated value is not a string
-        }
-        val addInfoAsInt: Int = Try(addInfo.toInt).getOrElse(0)
-        val enrolmentCourseDetails = new util.HashMap[String, Int]()
-        enrolmentCourseDetails.put(JsonKey.TIME_SPENT_ON_COMPLETED_COURSES, hoursSpentOnCompletedCourses)
-        enrolmentCourseDetails.put(JsonKey.CERITFICATES_ISSUED, certificateIssued)
-        enrolmentCourseDetails.put(JsonKey.COURSES_IN_PROGRESS, coursesInProgress)
-        enrolmentCourseDetails.put(JsonKey.KARMA_POINTS, totalUserKarmaPoints)
-        enrolmentCourseDetails.put(JsonKey.ADD_INFO, addInfoAsInt)
+        val enrolmentCourseDetails = new util.HashMap[String, AnyRef]()
+        enrolmentCourseDetails.put(JsonKey.TIME_SPENT_ON_COMPLETED_COURSES, hoursSpentOnCompletedCourses.asInstanceOf[AnyRef])
+        enrolmentCourseDetails.put(JsonKey.CERITFICATES_ISSUED, certificateIssued.asInstanceOf[AnyRef])
+        enrolmentCourseDetails.put(JsonKey.COURSES_IN_PROGRESS, coursesInProgress.asInstanceOf[AnyRef])
+        enrolmentCourseDetails.put(JsonKey.KARMA_POINTS, totalUserKarmaPoints.asInstanceOf[AnyRef])
+        enrolmentCourseDetails.put(JsonKey.ADD_INFO, addInfo.asInstanceOf[AnyRef])
         enrolmentCourseDetails
     }
-
 }
 
 
