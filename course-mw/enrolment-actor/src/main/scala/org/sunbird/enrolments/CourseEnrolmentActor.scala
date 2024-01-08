@@ -5,7 +5,7 @@ import java.text.{MessageFormat, SimpleDateFormat}
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalDateTime, LocalTime, Month, ZoneId}
 import java.util
-import java.util.{Comparator, Date, UUID}
+import java.util.{Collections, Comparator, Date, UUID}
 import akka.actor.ActorRef
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.sunbird.common.models.util.JsonKey
@@ -669,15 +669,19 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             userId,
             util.Arrays.asList(JsonKey.USER_KARMA_TOTAL_POINTS, JsonKey.ADD_INFO)
         )
-        // dbResponse is a list of maps to extract points for each record
+        //dbResponse is a list of maps to extract points for each record
         val dbResponse: java.util.List[util.Map[String, AnyRef]] = userKarmaPoints.get(JsonKey.RESPONSE).asInstanceOf[java.util.List[util.Map[String, AnyRef]]]
         val totalUserKarmaPoints: Int = dbResponse.asScala.collectFirst {
             case record: util.Map[String, AnyRef] if record.containsKey(JsonKey.USER_KARMA_TOTAL_POINTS) =>
                 record.get(JsonKey.USER_KARMA_TOTAL_POINTS).asInstanceOf[Integer].toInt
         }.getOrElse(0)
-        val addInfoString: String = dbResponse.get(0).get(JsonKey.ADD_INFO).asInstanceOf[String]
-        val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
+        val addInfoString: String = if (dbResponse.isEmpty) {
+            null
+        } else {
+            dbResponse.get(0).get(JsonKey.ADD_INFO).asInstanceOf[String]
+        }
         if (addInfoString != null) {
+            val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
             addInfo = objectMapper.readValue(addInfoString, classOf[util.Map[String, AnyRef]])
         }
         val enrolmentCourseDetails = new util.HashMap[String, AnyRef]()
