@@ -5,7 +5,7 @@ import java.text.{MessageFormat, SimpleDateFormat}
 import java.time.format.DateTimeFormatter
 import java.time.{LocalDate, LocalDateTime, LocalTime, Month, ZoneId}
 import java.util
-import java.util.{Comparator, Date, UUID}
+import java.util.{Collections, Comparator, Date, UUID}
 import akka.actor.ActorRef
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.sunbird.common.models.util.JsonKey
@@ -643,7 +643,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         var certificateIssued: Int = 0
         var coursesInProgress: Int = 0
         var hoursSpentOnCompletedCourses: Int = 0
-        var addInfo: util.Map[String, AnyRef] = null
+        var addInfo: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
         finalEnrolment.foreach { courseDetails =>
             val courseStatus = courseDetails.get(JsonKey.STATUS)
             if (courseStatus != 2) {
@@ -669,15 +669,19 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             userId,
             util.Arrays.asList(JsonKey.USER_KARMA_TOTAL_POINTS, JsonKey.ADD_INFO)
         )
-        // dbResponse is a list of maps to extract points for each record
+        //dbResponse is a list of maps to extract points for each record
         val dbResponse: java.util.List[util.Map[String, AnyRef]] = userKarmaPoints.get(JsonKey.RESPONSE).asInstanceOf[java.util.List[util.Map[String, AnyRef]]]
         val totalUserKarmaPoints: Int = dbResponse.asScala.collectFirst {
             case record: util.Map[String, AnyRef] if record.containsKey(JsonKey.USER_KARMA_TOTAL_POINTS) =>
                 record.get(JsonKey.USER_KARMA_TOTAL_POINTS).asInstanceOf[Integer].toInt
         }.getOrElse(0)
-        val addInfoString: String = dbResponse.get(0).get(JsonKey.ADD_INFO).asInstanceOf[String]
-        val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
-        if (addInfoString != null) {
+        val addInfoString: String = if (dbResponse.isEmpty) {
+            ""
+        } else {
+            Option(dbResponse.get(0)).flatMap(record => Option(record.get(JsonKey.ADD_INFO)).collect { case str: String => str }).getOrElse("")
+        }
+        if (addInfoString != null && addInfoString.nonEmpty) {
+            val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
             addInfo = objectMapper.readValue(addInfoString, classOf[util.Map[String, AnyRef]])
         }
         val enrolmentCourseDetails = new util.HashMap[String, AnyRef]()
