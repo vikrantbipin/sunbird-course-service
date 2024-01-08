@@ -643,7 +643,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         var certificateIssued: Int = 0
         var coursesInProgress: Int = 0
         var hoursSpentOnCompletedCourses: Int = 0
-        var addInfo: util.Map[String, AnyRef] = null
+        var addInfo: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
         finalEnrolment.foreach { courseDetails =>
             val courseStatus = courseDetails.get(JsonKey.STATUS)
             if (courseStatus != 2) {
@@ -676,11 +676,11 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 record.get(JsonKey.USER_KARMA_TOTAL_POINTS).asInstanceOf[Integer].toInt
         }.getOrElse(0)
         val addInfoString: String = if (dbResponse.isEmpty) {
-            null
+            ""
         } else {
-            dbResponse.get(0).get(JsonKey.ADD_INFO).asInstanceOf[String]
+            Option(dbResponse.get(0)).flatMap(record => Option(record.get(JsonKey.ADD_INFO)).collect { case str: String => str }).getOrElse("")
         }
-        if (addInfoString != null) {
+        if (addInfoString != null && addInfoString.nonEmpty) {
             val objectMapper = new ObjectMapper().registerModule(DefaultScalaModule)
             addInfo = objectMapper.readValue(addInfoString, classOf[util.Map[String, AnyRef]])
         }
