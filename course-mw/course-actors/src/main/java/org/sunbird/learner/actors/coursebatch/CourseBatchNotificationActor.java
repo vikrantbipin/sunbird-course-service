@@ -37,6 +37,9 @@ public class CourseBatchNotificationActor extends BaseActor {
           .getProperty(JsonKey.SUNBIRD_COURSE_BATCH_NOTIFICATION_SIGNATURE);
   private static String baseUrl =
       PropertiesCache.getInstance().getProperty(JsonKey.SUNBIRD_WEB_URL);
+  private static String contentBucket = PropertiesCache.getInstance().getProperty(JsonKey.CONTENT_BUCKET);
+  private static String staticHostUrl = PropertiesCache.getInstance().getProperty(JsonKey.STATIC_HOST_URL);
+  private static String profileUpdateUrl = PropertiesCache.getInstance().getProperty(JsonKey.PROFILE_UPDATE_URL);
   private static String courseBatchPath =
           PropertiesCache.getInstance().getProperty(JsonKey.COURSE_BATCH_PATH);
   private UserOrgService userOrgService = UserOrgServiceImpl.getInstance();
@@ -165,6 +168,16 @@ public class CourseBatchNotificationActor extends BaseActor {
     requestMap.put(JsonKey.BODY, "Notification mail Body");
     requestMap.put(JsonKey.ORG_NAME, courseBatchObject.get(JsonKey.ORG_NAME));
     requestMap.put(JsonKey.COURSE_LOGO_URL, contentDetails.get(JsonKey.APP_ICON));
+    if (contentDetails.containsKey(JsonKey.POSTER_IMAGE)) {
+      String posterImageUrl = (String) contentDetails.get(JsonKey.POSTER_IMAGE);
+      if (posterImageUrl.contains(staticHostUrl)) {
+        String[] posterImageUrlArr = posterImageUrl.split("/content/");
+        posterImageUrl = baseUrl + contentBucket + "/" + posterImageUrlArr[1];
+      }
+      requestMap.put(JsonKey.COURSE_POSTER_IMAGE, posterImageUrl);
+    }
+    requestMap.put(JsonKey.PROVIDER_NAME, contentDetails.get(JsonKey.SOURCE));
+    requestMap.put(JsonKey.PROFILE_UPDATE_LINK, baseUrl + profileUpdateUrl);
     requestMap.put(JsonKey.START_DATE, courseBatchObject.get(JsonKey.START_DATE));
     requestMap.put(JsonKey.END_DATE, courseBatchObject.get(JsonKey.END_DATE));
     requestMap.put(JsonKey.COURSE_ID, courseBatchObject.get(JsonKey.COURSE_ID));
