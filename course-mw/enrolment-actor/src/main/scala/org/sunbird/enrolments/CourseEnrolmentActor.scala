@@ -477,10 +477,10 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                     }
                 }
                 val updatedEnrolmentList = updateProgressData(allEnrolledCourses, userId, allCourseIds, request.getRequestContext)
-                if ("v2".equals(version))
-                    addBatchDetails_v2(updatedEnrolmentList, request)
-                else
-                    addBatchDetails(updatedEnrolmentList, request)
+                //if ("v2".equals(version))
+                //    addBatchDetails_v2(updatedEnrolmentList, request)
+                //else
+                addBatchDetails(updatedEnrolmentList, request)
 
             } else new java.util.ArrayList[java.util.Map[String, AnyRef]]()
         }
