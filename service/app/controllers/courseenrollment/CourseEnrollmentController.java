@@ -269,7 +269,8 @@ public class CourseEnrollmentController extends BaseController {
     public CompletionStage<Result> getEnrolledCourses_v2(String uid, Http.Request httpRequest) {
         return getEnrolledCourses(uid, httpRequest, "v2");
     }
-    public CompletionStage<Result> enroll_Program(Http.Request httpRequest,Boolean batchType) {
+
+    public CompletionStage<Result> enrollProgram(Http.Request httpRequest, Boolean batchType) {
         return handleRequest(courseEnrolmentActor, "enrolProgram",
                 httpRequest.body().asJson(),
                 (request) -> {
@@ -320,13 +321,12 @@ public class CourseEnrollmentController extends BaseController {
                 getAllRequestHeaders(httpRequest),
                 httpRequest);
     }
-    public CompletionStage<Result> openProgramEnroll(Http.Request httpRequest){
-      Boolean batchType = Boolean.TRUE;
-        return enroll_Program(httpRequest, batchType);
+
+    public CompletionStage<Result> openProgramEnroll(Http.Request httpRequest) {
+        return enrollProgram(httpRequest, true);
     }
 
     public CompletionStage<Result> enrollProgram(Http.Request httpRequest) {
-        Boolean batchType = Boolean.FALSE;
-        return enroll_Program(httpRequest, batchType);
+        return enrollProgram(httpRequest, false);
     }
 }
