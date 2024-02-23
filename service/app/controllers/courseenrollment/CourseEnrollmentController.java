@@ -269,7 +269,8 @@ public class CourseEnrollmentController extends BaseController {
     public CompletionStage<Result> getEnrolledCourses_v2(String uid, Http.Request httpRequest) {
         return getEnrolledCourses(uid, httpRequest, "v2");
     }
-    public CompletionStage<Result> enrollProgram(Http.Request httpRequest) {
+
+    public CompletionStage<Result> enrollProgram(Http.Request httpRequest, Boolean batchType) {
         return handleRequest(courseEnrolmentActor, "enrolProgram",
                 httpRequest.body().asJson(),
                 (request) -> {
@@ -282,6 +283,7 @@ public class CourseEnrollmentController extends BaseController {
                     validator.validateRequestedBy(userId);
                     validator.validateEnrollProgram(req);
                     req.getRequest().put(JsonKey.USER_ID, userId);
+                    req.getContext().put("verifyBatchType", batchType);
                     return null;
                 },
                 getAllRequestHeaders(httpRequest),
@@ -318,5 +320,13 @@ public class CourseEnrollmentController extends BaseController {
                 },
                 getAllRequestHeaders(httpRequest),
                 httpRequest);
+    }
+
+    public CompletionStage<Result> openProgramEnroll(Http.Request httpRequest) {
+        return enrollProgram(httpRequest, true);
+    }
+
+    public CompletionStage<Result> enrollProgram(Http.Request httpRequest) {
+        return enrollProgram(httpRequest, false);
     }
 }
