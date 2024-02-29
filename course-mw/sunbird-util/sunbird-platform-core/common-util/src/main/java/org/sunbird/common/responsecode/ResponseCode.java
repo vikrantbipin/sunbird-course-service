@@ -842,6 +842,9 @@ public enum ResponseCode {
   notOpenBatch(
           ResponseMessage.Key.NOT_OPEN_BATCH,
           ResponseMessage.Message.NOT_OPEN_BATCH),
+  missingHierarchyContentDataForProgram(
+          ResponseMessage.Key.MISSING_HIERARCHY_CONTENT_DATA_FOR_PROGRAM,
+          ResponseMessage.Message.MISSING_HIERARCHY_CONTENT_DATA_FOR_PROGRAM),
 
   accessDeniedToEnrolOrUnenrolCourse(ResponseMessage.Key.USER_DOES_NOT_HAVE_ACCESS,ResponseMessage.Message.USER_DOES_NOT_HAVE_ACCESS),
   OK(200),

@@ -543,7 +543,6 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val batchData: CourseBatch = courseBatchDao.readById(programId, batchId, request.getRequestContext)
         val verifyBatchType: Boolean = Option(request.getContext.get("verifyBatchType").asInstanceOf[Boolean]).getOrElse(false)
         if(verifyBatchType && !("open".equalsIgnoreCase(batchData.getEnrollmentType))) {
-            //throw error
             ProjectCommonException.throwClientErrorException(ResponseCode.notOpenBatch);
         }
         val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, programId, batchId)
@@ -590,7 +589,27 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def getCoursesForProgramAndEnrol(request: Request, programId: String, userId: String, batchId: String) = {
         val redisKey = s"$programId:$programId:childrenCourses"
-        val childrenNodes: List[String] = cacheUtil.getList(redisKey, redisCollectionIndex)
+        var childrenNodes: List[String] = List.empty[String] //cacheUtil.getList(redisKey, redisCollectionIndex)
+        var contentDataForProgram: java.util.List[java.util.Map[String, AnyRef]] = null
+        var isFoundInCache: Boolean = true
+        if (childrenNodes.isEmpty) {
+            isFoundInCache = false
+            contentDataForProgram = contentHierarchyDao.getContentChildren(request.getRequestContext, programId)
+            if (CollectionUtils.isNotEmpty(contentDataForProgram)) {
+                childrenNodes = contentDataForProgram.asScala.toStream
+                  .flatMap { childNode =>
+                      Option(childNode.get(JsonKey.IDENTIFIER)).map(_.asInstanceOf[String])
+                  }.toList
+            } else {
+                ProjectCommonException.throwClientErrorException(ResponseCode.missingHierarchyContentDataForProgram);
+            }
+            if (!checkCourseBatchInfo(childrenNodes, request.getRequestContext)) {
+                ProjectCommonException.throwClientErrorException(ResponseCode.courseDoesNotHaveBatch);
+            }
+        }
+        if (isFoundInCache && !checkCourseBatchInfo(childrenNodes, request.getRequestContext)) {
+            ProjectCommonException.throwClientErrorException(ResponseCode.courseDoesNotHaveBatch);
+        }
         if (!childrenNodes.isEmpty) {
             for (childNode <- childrenNodes) {
                 val contentData = getContentReadAPIData(childNode, List(JsonKey.PRIMARYCATEGORY), request)
@@ -606,7 +625,6 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 }
             }
         } else {
-            val contentDataForProgram: java.util.List[java.util.Map[String, AnyRef]] = contentHierarchyDao.getContentChildren(request.getRequestContext, programId)
             for (childNode <- contentDataForProgram.asScala) {
                 val courseId: String = childNode.get(JsonKey.IDENTIFIER).asInstanceOf[String]
                 val primaryCategory: String = childNode.get(JsonKey.PRIMARYCATEGORY).asInstanceOf[String]
@@ -765,6 +783,18 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             resp.put(JsonKey.RESPONSE, response)
         }
         sender().tell(resp, self)
+    }
+
+    def checkCourseBatchInfo(courseIdList: List[String], requestContext: RequestContext): Boolean = {
+        for (courseId <- courseIdList) {
+            try {
+                val batchData: CourseBatch = courseBatchDao.readFirstAvailableBatch(courseId, requestContext)
+            } catch {
+                case e: ProjectCommonException =>
+                    return false
+            }
+        }
+        return true
     }
 }
 

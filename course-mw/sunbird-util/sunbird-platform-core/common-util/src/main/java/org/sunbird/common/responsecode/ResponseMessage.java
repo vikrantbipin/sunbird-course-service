@@ -463,6 +463,7 @@ public interface ResponseMessage {
     String CURRENT_BATCH_SIZE_PARAMETER = "Request body has invalid/missing parameter 'currentBatchSize' in batchAttributes.";
     String COURSE_DOES_NOT_HAVE_BATCH = "Course doesn't have any batch.";
     String NOT_OPEN_BATCH ="Not an open batch";
+    String MISSING_HIERARCHY_CONTENT_DATA_FOR_PROGRAM ="Missing hierarchy content data for the program";
   }
 
   interface Key {
@@ -854,5 +855,6 @@ public interface ResponseMessage {
     String CURRENT_BATCH_SIZE_INVALID =  "INVALID_FIELD_CURRENT_BATCH_SIZE";
     String COURSE_DOES_NOT_HAVE_BATCH = "COURSE_DOES_NOT_HAVE_BATCH";
     String NOT_OPEN_BATCH ="NOT_OPEN_BATCH";
+    String MISSING_HIERARCHY_CONTENT_DATA_FOR_PROGRAM= "MISSING_HIERARCHY_CONTENT_DATA_FOR_PROGRAM";
   }
 }
