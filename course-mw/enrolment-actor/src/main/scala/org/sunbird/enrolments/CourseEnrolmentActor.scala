@@ -543,7 +543,6 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val batchData: CourseBatch = courseBatchDao.readById(programId, batchId, request.getRequestContext)
         val verifyBatchType: Boolean = Option(request.getContext.get("verifyBatchType").asInstanceOf[Boolean]).getOrElse(false)
         if(verifyBatchType && !("open".equalsIgnoreCase(batchData.getEnrollmentType))) {
-            //throw error
             ProjectCommonException.throwClientErrorException(ResponseCode.notOpenBatch);
         }
         val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, programId, batchId)
@@ -591,6 +590,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
     def getCoursesForProgramAndEnrol(request: Request, programId: String, userId: String, batchId: String) = {
         val redisKey = s"$programId:$programId:childrenCourses"
         val childrenNodes: List[String] = cacheUtil.getList(redisKey, redisCollectionIndex)
+        val courseBatchMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
         if (!childrenNodes.isEmpty) {
             for (childNode <- childrenNodes) {
                 val contentData = getContentReadAPIData(childNode, List(JsonKey.PRIMARYCATEGORY), request)
@@ -598,9 +598,12 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 if (util.Arrays.asList(getConfigValue(JsonKey.PROGRAM_ENROLL_RESTRICTED_CHILDREN_PRIMARY_CATEGORY).split(","): _*).contains(primaryCategory))
                     ProjectCommonException.throwClientErrorException(ResponseCode.contentTypeMismatch, childNode)
                 else if (util.Arrays.asList(getConfigValue(JsonKey.PROGRAM_ENROLL_ALLOWED_CHILDREN_PRIMARY_CATEGORY).split(","): _*).contains(primaryCategory)) {
-                    // Enroll in course with courseId, userId and batchId.
-                    request.getRequest.put(JsonKey.COURSE_ID, childNode)
-                    val isAlreadyCompletedOrEnrolledToCourse: Boolean = enrollProgramCourses(request)
+                    try {
+                        val batchData: CourseBatch = courseBatchDao.readFirstAvailableBatch(childNode, request.getRequestContext)
+                        courseBatchMap.put(childNode, batchData)
+                    } catch {
+                        case e: ProjectCommonException => ProjectCommonException.throwClientErrorException(ResponseCode.courseDoesNotHaveBatch);
+                    }
                 } else {
                     logger.info(request.getRequestContext, "Skipping the enrol for Primary Category" + primaryCategory)
                 }
@@ -613,21 +616,26 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 if (util.Arrays.asList(getConfigValue(JsonKey.PROGRAM_ENROLL_RESTRICTED_CHILDREN_PRIMARY_CATEGORY).split(","): _*).contains(primaryCategory))
                     ProjectCommonException.throwClientErrorException(ResponseCode.contentTypeMismatch, courseId)
                 else if (util.Arrays.asList(getConfigValue(JsonKey.PROGRAM_ENROLL_ALLOWED_CHILDREN_PRIMARY_CATEGORY).split(","): _*).contains(primaryCategory)) {
-                    // Enroll in course with courseId, userId and batchId.
-                    request.getRequest.put(JsonKey.COURSE_ID, courseId)
-                    val isAlreadyCompletedOrEnrolledToCourse: Boolean = enrollProgramCourses(request)
+                    try {
+                        val batchData: CourseBatch = courseBatchDao.readFirstAvailableBatch(courseId, request.getRequestContext)
+                        courseBatchMap.put(courseId, batchData)
+                    } catch {
+                        case e: ProjectCommonException => ProjectCommonException.throwClientErrorException(ResponseCode.courseDoesNotHaveBatch);
+                    }
                 } else {
                     logger.info(request.getRequestContext, "Skipping the enrol for Primary Category" + primaryCategory)
                 }
             }
         }
+        for (courseId <- courseBatchMap.keySet()) {
+            // Enroll in course with courseId, userId and batchId.
+            enrollProgramCourses(request, courseId, courseBatchMap.get(courseId).asInstanceOf[CourseBatch])
+        }
     }
 
-    def enrollProgramCourses(request: Request): Boolean = {
+    def enrollProgramCourses(request: Request,courseId: String,batchData:CourseBatch): Boolean = {
         try {
-            val courseId: String = request.get(JsonKey.COURSE_ID).asInstanceOf[String]
             val userId: String = request.get(JsonKey.USER_ID).asInstanceOf[String]
-            val batchData: CourseBatch = courseBatchDao.readFirstAvailableBatch(courseId, request.getRequestContext)
             val batchId: String = batchData.getBatchId.asInstanceOf[String]
             val enrolmentData: UserCourses = userCoursesDao.read(request.getRequestContext, userId, courseId, batchId)
             val batchUserData: BatchUser = batchUserDao.read(request.getRequestContext, batchId, userId)
