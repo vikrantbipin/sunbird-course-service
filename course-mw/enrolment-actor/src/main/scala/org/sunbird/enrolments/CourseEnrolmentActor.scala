@@ -589,7 +589,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def getCoursesForProgramAndEnrol(request: Request, programId: String, userId: String, batchId: String) = {
         val redisKey = s"$programId:$programId:childrenCourses"
-        var childrenNodes: List[String] = cacheUtil.getList(redisKey, redisCollectionIndex)
+        val childrenNodes: List[String] = cacheUtil.getList(redisKey, redisCollectionIndex)
         val courseBatchMap: util.Map[String, AnyRef] = new util.HashMap[String, AnyRef]()
         if (!childrenNodes.isEmpty) {
             for (childNode <- childrenNodes) {
