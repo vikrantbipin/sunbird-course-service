@@ -519,7 +519,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
 
     def addCourseDetails_v2(activeEnrolments: java.util.List[java.util.Map[String, AnyRef]]): java.util.List[java.util.Map[String, AnyRef]] = {
         val coursesMap = ContentCacheHandler.getContentMap.asInstanceOf[java.util.Map[String, java.util.Map[String, AnyRef]]]
-        activeEnrolments.filter(enrolment => coursesMap.containsKey(enrolment.get(JsonKey.COURSE_ID))).map(enrolment => {
+        activeEnrolments.map(enrolment => {
             var courseContent = coursesMap.get(enrolment.get(JsonKey.COURSE_ID))
             if (courseContent == null || courseContent.size() < 1)
                 courseContent = ContentCacheHandler.getContent(enrolment.get(JsonKey.COURSE_ID).asInstanceOf[String])
