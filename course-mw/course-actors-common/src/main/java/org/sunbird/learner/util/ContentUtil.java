@@ -230,17 +230,17 @@ public final class ContentUtil {
     return flag;
   }
   public static Map<String, Object> getAllContent(List identifierList,int pageSize) {
-    int recordStart = 0;
+    //int recordStart = 0;
     int remainingRecords;
     Map<String, Object> allRecords = new HashMap<>();
     do {
-      Map.Entry<Integer, Map<String, Map<String, Object>>> contentsResult = contents(identifierList,recordStart, pageSize);
+      Map.Entry<Integer, Map<String, Map<String, Object>>> contentsResult = contents(identifierList,allRecords.size(), pageSize);
       int count = contentsResult.getKey();
       Map<String, Map<String, Object>> contentMap = contentsResult.getValue();
       allRecords.putAll(contentMap);
       // Update remaining records and move to the next page if needed
       remainingRecords = count - allRecords.size();
-      recordStart = allRecords.size() - 1;
+     // recordStart = allRecords.size() - 1;
     } while (remainingRecords > 0);
 
     return allRecords;
@@ -252,6 +252,9 @@ public final class ContentUtil {
     SearchDTO searchDTO = new SearchDTO();
     searchDTO.setOffset(offset);
     searchDTO.setLimit(limit);
+    HashMap sort = new HashMap();
+    sort.put("createdOn","asc");
+    searchDTO.setSortBy(sort);
     HashMap filters = new java.util.HashMap<String, Object>();
     HashMap enabled = new HashMap();
     enabled.put(JsonKey.TRACKABLE_ENABLED,JsonKey.YES);
