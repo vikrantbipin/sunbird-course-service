@@ -47,11 +47,11 @@ public class ContentCacheHandler implements Runnable {
 
   public static Map<String, Object> getContent(String id) {
       Map<String, Object> obj = (Map<String, Object>)contentMap.get(id);
-    if(obj == null)
+    if(obj != null)
        return obj;
     else{
-         ContentUtil.getAllContent(Arrays.asList(id.split("")),Integer.parseInt(PropertiesCache.getInstance()
-                .getProperty(JsonKey.PAGE_SIZE_CONTENT_FETCH)));
+        contentMap.putAll(ContentUtil.getAllContent(Arrays.asList(id.split("")),Integer.parseInt(PropertiesCache.getInstance()
+                .getProperty(JsonKey.PAGE_SIZE_CONTENT_FETCH))));
        return (Map<String, Object>)contentMap.get(id);
     }
   }
