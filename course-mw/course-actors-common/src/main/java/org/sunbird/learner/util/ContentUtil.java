@@ -264,7 +264,10 @@ public final class ContentUtil {
     queryFields.addAll(Arrays.asList(queryFieldsParam.split(",")));
     searchDTO.setFields(queryFields);
     filters.put(JsonKey.MIME_TYPE, JsonKey.COLLECTION_MIME_TYPE);
-    filters.put(JsonKey.STATUS,JsonKey.LIVE);
+    List<String> status = new ArrayList<>();
+    status.add(JsonKey.LIVE);
+    status.add(JsonKey.RETIRED);
+    filters.put(JsonKey.STATUS,status);
     if(identifierList != null && identifierList.size() > 0)
       filters.put(JsonKey.IDENTIFIER,identifierList);
     searchDTO.getAdditionalProperties().put(JsonKey.FILTERS, filters);

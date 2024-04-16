@@ -517,12 +517,28 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         enrolmentData.setStatus(getCompletionStatus(enrolmentData.getProgress, leafNodesCount))
     }
 
-    def addCourseDetails_v2(activeEnrolments: java.util.List[java.util.Map[String, AnyRef]]): java.util.List[java.util.Map[String, AnyRef]] = {
+    def getCourseContent(courseId: String): java.util.Map[String, AnyRef] = {
         val coursesMap = ContentCacheHandler.getContentMap.asInstanceOf[java.util.Map[String, java.util.Map[String, AnyRef]]]
-        activeEnrolments.map(enrolment => {
-            var courseContent = coursesMap.get(enrolment.get(JsonKey.COURSE_ID))
-            if (courseContent == null || courseContent.size() < 1)
-                courseContent = ContentCacheHandler.getContent(enrolment.get(JsonKey.COURSE_ID).asInstanceOf[String])
+        var courseContent = coursesMap.get(courseId)
+        if (courseContent == null || courseContent.size() < 1)
+            courseContent = ContentCacheHandler.getContent(courseId)
+        courseContent
+    }
+
+    def isCourseEligible(enrolment: java.util.Map[String, AnyRef]): Boolean = {
+        val courseContent = getCourseContent(enrolment.get(JsonKey.COURSE_ID).asInstanceOf[String])
+        if (null == courseContent || (!JsonKey.LIVE.equalsIgnoreCase(courseContent.get(JsonKey.STATUS).asInstanceOf[String])
+          && !isRetiredCoursesIncludedInEnrolList)) {
+            false
+        }
+        else {
+            true
+        }
+    }
+
+    def addCourseDetails_v2(activeEnrolments: java.util.List[java.util.Map[String, AnyRef]]): java.util.List[java.util.Map[String, AnyRef]] = {
+        activeEnrolments.filter(enrolment => isCourseEligible(enrolment)).map(enrolment => {
+            val courseContent = getCourseContent(enrolment.get(JsonKey.COURSE_ID).asInstanceOf[String])
             enrolment.put(JsonKey.COURSE_NAME, courseContent.get(JsonKey.NAME))
             enrolment.put(JsonKey.DESCRIPTION, courseContent.get(JsonKey.DESCRIPTION))
             enrolment.put(JsonKey.LEAF_NODE_COUNT, courseContent.get(JsonKey.LEAF_NODE_COUNT))
@@ -533,6 +549,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
             enrolment
         }).toList.asJava
     }
+
     def enrollProgram(request: Request): Unit = {
         val programId: String = request.get(JsonKey.PROGRAM_ID).asInstanceOf[String]
         val isAdminAPI: Boolean = request.get(JsonKey.IS_ADMIN_API).asInstanceOf[Boolean]

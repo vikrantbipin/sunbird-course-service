@@ -50,7 +50,7 @@ public class ContentCacheHandler implements Runnable {
     if(obj != null)
        return obj;
     else{
-        contentMap.putAll(ContentUtil.getAllContent(Arrays.asList(id.split("")),Integer.parseInt(PropertiesCache.getInstance()
+        contentMap.putAll(ContentUtil.getAllContent(Arrays.asList(id),Integer.parseInt(PropertiesCache.getInstance()
                 .getProperty(JsonKey.PAGE_SIZE_CONTENT_FETCH))));
        return (Map<String, Object>)contentMap.get(id);
     }
