@@ -443,7 +443,7 @@ public class ElasticSearchRestHighImpl implements ElasticSearchService {
               Map<String, Object> responseMap = new HashMap<>();
               List<Map<String, Object>> esSource = new ArrayList<>();
               responseMap.put(JsonKey.CONTENT, esSource);
-              responseMap.put(JsonKey.COUNT, 0);
+              responseMap.put(JsonKey.COUNT, 0L);
               promise.success(responseMap);
             } else {
               Map<String, Object> responseMap =
