@@ -1139,5 +1139,9 @@ public final class JsonKey {
   public static final String LRC_PROGRESS_DETAILS = "lrcProgressDetails";
   public static final String USERS_COUNT = "system.count(userid)";
   public static final String COURSE_ENROLL_ALLOWED_PRIMARY_CATEGORY = "course_enroll_allowed_primary_category";
+  public static final String START_DATE_BATCH = "start_date";
+  public static final String END_DATE_BATCH = "end_date";
+  public static final String ADD_EXTRA_HOURS_MINS = "addExtraHrsAndMins.start_date_end_date";
+  public static final String STANDALONE_ASSESSMENT ="Standalone Assessment";
   private JsonKey() {}
 }
