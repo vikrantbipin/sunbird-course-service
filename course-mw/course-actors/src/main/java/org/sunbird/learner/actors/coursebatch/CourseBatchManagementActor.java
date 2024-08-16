@@ -234,7 +234,7 @@ public class CourseBatchManagementActor extends BaseActor {
     Response result =
         courseBatchDao.update(actorMessage.getRequestContext(), (String) request.get(JsonKey.COURSE_ID), batchId, courseBatchMap);
     CourseBatch updatedCourseObject = mapESFieldsToObject(courseBatch);
-    sender().tell(result, self());
+    
     Map<String, Object> esCourseMap = CourseBatchUtil.esCourseMapping(updatedCourseObject, dateFormat);
 
     CourseBatchUtil.syncCourseBatchForeground(actorMessage.getRequestContext(), batchId, esCourseMap);
@@ -247,6 +247,8 @@ public class CourseBatchManagementActor extends BaseActor {
     TelemetryUtil.addTargetObjectRollUp(rollUp, targetObject);
     TelemetryUtil.telemetryProcessingCall(courseBatchMap, targetObject, correlatedObject, actorMessage.getContext());
     updateCollection(actorMessage.getRequestContext(), esCourseMap, contentDetails);
+
+    sender().tell(result, self());
     if (courseNotificationActive()) {
       batchOperationNotifier(actorMessage, courseBatch, participantsMap);
     }
