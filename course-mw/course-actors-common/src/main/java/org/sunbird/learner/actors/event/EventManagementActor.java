@@ -10,18 +10,18 @@ import org.sunbird.common.request.Request;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.keys.SunbirdKey;
 import org.sunbird.learner.actors.coursebatch.service.UserCoursesService;
+import org.sunbird.learner.actors.event.impl.EventEnrolmentDaoImpl;
 import org.sunbird.learner.util.Util;
 
 import java.text.MessageFormat;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class EventManagementActor extends BaseActor {
 
-	private final UserCoursesService userCoursesService = new UserCoursesService();
+    private final UserCoursesService userCoursesService = new UserCoursesService();
+
+    private EventEnrolmentDao eventBatchDao = new EventEnrolmentDaoImpl();
 
     @Override
     public void onReceive(Request request) throws Throwable {
@@ -30,12 +30,34 @@ public class EventManagementActor extends BaseActor {
             case "discardEvent":
                 discardEvent(request);
                 break;
+            case "listEnrol":
+                userEventEnrollmentList(request);
+                break;
+            case "getEnrol":
+                getUserEventEnrollment(request);
+                break;
+            case "getEventState":
+                getUserEventState(request);
+                break;
             default:
                 onReceiveUnsupportedOperation(requestedOperation);
                 break;
         }
     }
-    
+
+    private void getUserEventState(Request request) {
+        logger.info(request.getRequestContext(), "EventManagementActor: getUserEventState = " );
+        try {
+            List<Map<String, Object>> result = eventBatchDao.getUserEventState(request);
+            Response response = new Response();
+            response.put(JsonKey.EVENTS, result);
+            sender().tell(response, self());
+        } catch (Exception e) {
+            logger.error(request.getRequestContext(), "Exception in getUserEventState for user: ", e);
+            throw e;
+        }
+    }
+
     private void discardEvent(Request request) throws Exception {
         validateNoEnrollments(request);
         String pathId = JsonKey.IDENTIFIER;
@@ -77,7 +99,7 @@ public class EventManagementActor extends BaseActor {
             }
         }
     }
-    
+
     private void validateNoEnrollments(Request request) {
         String identifier = request.get(SunbirdKey.IDENTIFIER).toString();
         String fixedBatchId = request.get(JsonKey.FIXED_BATCH_ID).toString();
@@ -90,4 +112,33 @@ public class EventManagementActor extends BaseActor {
         }
     }
 
+    private void userEventEnrollmentList(Request request) throws Exception {
+        String userId = (String) request.get(JsonKey.USER_ID);
+        logger.info(request.getRequestContext(), "EventManagementActor: list : UserId = " + userId);
+        try {
+            List<Map<String, Object>> result = eventBatchDao.getEnrolmentList(request, userId);
+            Response response = new Response();
+            response.put(JsonKey.EVENTS, result);
+            sender().tell(response, self());
+        } catch (Exception e) {
+            logger.error(request.getRequestContext(), "Exception in enrolment list for user: " + userId, e);
+            throw e;
+        }
+    }
+
+    private void getUserEventEnrollment(Request request) throws Exception {
+        String userId = (String) request.get(JsonKey.USER_ID);
+        String eventId = (String) request.get(JsonKey.EVENT_ID);
+        String batchId = (String) request.get(JsonKey.BATCH_ID);
+        logger.info(request.getRequestContext(), "EventManagementActor: list : UserId = " + userId);
+        try {
+            List<Map<String, Object>> result = eventBatchDao.getUserEventEnrollment(request, userId, eventId,batchId);
+            Response response = new Response();
+            response.put(JsonKey.EVENTS, result);
+            sender().tell(response, self());
+        } catch (Exception e) {
+            logger.error(request.getRequestContext(), "Exception in enrolment list for user: " + userId, e);
+            throw e;
+        }
+    }
 }

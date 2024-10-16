@@ -33,6 +33,8 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
     private var cassandraOperation = ServiceFactory.getInstance
     private var pushTokafkaEnabled: Boolean = true //TODO: to be removed once all are in scala
     private val consumptionDBInfo = Util.dbInfoMap.get(JsonKey.LEARNER_CONTENT_DB)
+    private val eventConsumptionDBInfo = Util.dbInfoMap.get(JsonKey.LEARNER_EVENT_DB)
+    private val eventenrolmentDBInfo = Util.dbInfoMap.get(JsonKey.LEARNER_ENROLMENT_DB)
     private val assessmentAggregatorDBInfo = Util.dbInfoMap.get(JsonKey.ASSESSMENT_AGGREGATOR_DB)
     private val enrolmentDBInfo = Util.dbInfoMap.get(JsonKey.LEARNER_COURSE_DB)
     val dateFormatter = ProjectUtil.getDateFormatter
@@ -47,6 +49,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
         request.getOperation match {
             case "updateConsumption" => updateConsumption(request)
             case "getConsumption" => getConsumption(request)
+            case "updateEventConsumption" => updateEventConsumption(request)
             case _ => onReceiveUnsupportedOperation(request.getOperation)
         }
     }
@@ -292,9 +295,10 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
                 updatedContent.put(JsonKey.STATUS, existingStatus.asInstanceOf[AnyRef])
             }
         } else {
-            if(inputStatus >= 2) {
+          if (inputStatus >= 2) {
                 updatedContent.put(JsonKey.PROGRESS, 100.asInstanceOf[AnyRef])
                 updatedContent.put(JsonKey.LAST_COMPLETED_TIME, compareTime(null, inputCompletedTime))
+                updatedContent.put(JsonKey.STATUS, 2.asInstanceOf[AnyRef])
             } else {
                 updatedContent.put(JsonKey.PROGRESS, 0.asInstanceOf[AnyRef])
             }
@@ -514,4 +518,263 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
             Option(response)
         } else None
     }
+
+  /**
+   * Updates the event consumption based on the provided request.
+   *
+   * @param request The incoming request containing event data.
+   */
+  def updateEventConsumption(request: Request): Unit = {
+    val requestBy = request.get(JsonKey.REQUESTED_BY).asInstanceOf[String]
+    val requestedFor = request.get(JsonKey.REQUESTED_FOR).asInstanceOf[String]
+    val eventList = request.getRequest.getOrDefault(JsonKey.EVENTS, new java.util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+    // Process enrollment sync if no events are present
+    if (CollectionUtils.isEmpty(eventList)) {
+      // TO DO : Kafka Topic need to be created and checked as per the requirement.
+      /*processEnrolmentSyncForEventStateUpdate(request, requestBy, requestedFor)*/
+    } else {
+      val requestContext = request.getRequestContext
+      val finalContentList = request.getRequest.getOrDefault(JsonKey.EVENTS, new java.util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+      logger.info(requestContext, "Final event-consumption data: " + finalContentList)
+      // Process events and prepare the final response
+      val eventConsumptionResponse = processEvents(finalContentList, requestContext, requestBy, requestedFor, request)
+      val finalResponse = eventConsumptionResponse.getOrElse(new Response())
+      finalResponse.putAll(eventConsumptionResponse.getOrElse(new Response()).getResult)
+      sender().tell(finalResponse, self)
+    }
+  }
+
+  def processEnrolmentSyncForEventStateUpdate(request: Request, requestedBy: String, requestedFor: String): Unit = {
+    val primaryUserId = if (StringUtils.isNotBlank(requestedFor)) requestedFor else requestedBy
+    val userId: String = request.getOrDefault(JsonKey.USER_ID, primaryUserId).asInstanceOf[String]
+    val eventId: String = request.getOrDefault(JsonKey.EVENT_ID, "").asInstanceOf[String]
+    val batchId: String = request.getOrDefault(JsonKey.BATCH_ID, "").asInstanceOf[String]
+    val filters = Map[String, AnyRef]("userid" -> userId, "eventId" -> eventId, "batchid" -> batchId).asJava
+    val result = cassandraOperation
+      .getRecords(request.getRequestContext, enrolmentDBInfo.getKeySpace, enrolmentDBInfo.getTableName, filters,
+        null)
+    val resp = result.getResult
+      .getOrDefault(JsonKey.RESPONSE, new java.util.ArrayList[java.util.Map[String, AnyRef]])
+      .asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+    val response = {
+      if (CollectionUtils.isNotEmpty(resp)) {
+        pushEnrolmentSyncEvent(userId, eventId, batchId)
+        successResponse()
+      } else {
+        new ProjectCommonException(ResponseCode.invalidRequestData.getErrorCode,
+          s"""No Enrolment found for userId: $userId, batchId: $batchId, eventId: $eventId""", ResponseCode.CLIENT_ERROR.getResponseCode)
+      }
+    }
+    sender().tell(response, self)
+  }
+
+
+  /**
+   * Processes events based on the provided event list and updates event consumption data.
+   *
+   * This method retrieves batch details, validates user IDs, processes content consumption,
+   * and updates the relevant records in the database. It returns an optional response
+   * indicating the success of the operation.
+   *
+   * @param eventList The list of events to process.
+   * @param requestContext The context of the request.
+   * @param requestedBy The user who requested the operation.
+   * @param requestedFor The user for whom the operation is requested.
+   * @param request The incoming request containing additional data.
+   * @return An optional Response object containing the results of the operation.
+   */
+  def processEvents(eventList: java.util.List[java.util.Map[String, AnyRef]], requestContext: RequestContext, requestedBy: String, requestedFor: String, request: Request): Option[Response] = {
+    if (CollectionUtils.isNotEmpty(eventList)) {
+      val responseMessage = new java.util.HashMap[String, AnyRef]()
+      val contentIds: util.List[String] = new util.ArrayList[String]()
+      val inputContent: util.Map[String, AnyRef] = eventList.get(0)
+      val batchId = inputContent.get(JsonKey.BATCH_ID).asInstanceOf[String]
+      val contentId = inputContent.get(JsonKey.EVENT_ID).asInstanceOf[String]
+      val contextId = inputContent.get(JsonKey.EVENT_ID).asInstanceOf[String]
+      // Retrieve batch details
+      val batchDetailsList: List[java.util.Map[String, AnyRef]] = getBatches(requestContext, batchId, contentId, null).toList
+      if (batchDetailsList.nonEmpty) {
+        val batchDetails: java.util.Map[String, AnyRef] = batchDetailsList.get(0)
+        // Check batch status
+        if (null != batchDetails.get(JsonKey.STATUS) && 2 != batchDetails.get(JsonKey.STATUS)) {
+          val validUserIds = List(requestedBy, requestedFor).filter(p => StringUtils.isNotBlank(p))
+          val primaryUserId = if (StringUtils.isNotBlank(requestedFor)) requestedFor else requestedBy
+          if (StringUtils.isBlank(inputContent.get(JsonKey.USER_ID).asInstanceOf[String]))
+            inputContent.put(JsonKey.USER_ID, primaryUserId)
+          val userId = inputContent.get(JsonKey.USER_ID).asInstanceOf[String]
+          // Process event consumption if the user ID is valid
+          if (validUserIds.contains(userId)) {
+            val existingContents = getEventsConsumption(userId, contentId,contextId, batchId, requestContext).groupBy(x => x.get("contentId").asInstanceOf[String]).map(e => e._1 -> e._2.toList.head).toMap
+            val existingContent = existingContents.getOrElse(contentId, new java.util.HashMap[String, AnyRef])
+            var updatedContent = CassandraUtil.changeCassandraColumnMapping(processEventConsumption(inputContent, existingContent, userId))
+            updatedContent.remove("eventId")
+            updatedContent.put("contentid", contentId)
+            updatedContent.put("contextid",contextId)
+            val updatedContentList: List[java.util.Map[String, AnyRef]] = List(updatedContent)
+            val fieldList = List(JsonKey.PRIMARYCATEGORY, JsonKey.PARENT_COLLECTIONS)
+            /*val contentInfoMap = ContentUtil.getContentReadV3(eventId, fieldList, request.getContext.getOrDefault(JsonKey.HEADER, new util.HashMap[String, String]).asInstanceOf[util.Map[String, String]])
+            val parentCollectionList = contentInfoMap.get(JsonKey.PARENT_COLLECTIONS).asInstanceOf[java.util.List[String]]*/
+            // TO DO : Kafka Topic need to be created and checked as per the requirement.
+            /*pushInstructionEvent(requestContext, userId, batchId, eventId, updatedContentList, contentInfoMap.get(JsonKey.PRIMARYCATEGORY).asInstanceOf[String], parentCollectionList)*/
+            // Insert updated content into the database
+            cassandraOperation.batchInsertLogged(requestContext, eventConsumptionDBInfo.getKeySpace, eventConsumptionDBInfo.getTableName, updatedContentList)
+            val updateData = getLatestReadDetailsForEventStateUpdate(userId, batchId, contentId,contextId, updatedContentList.asInstanceOf[List[java.util.Map[String, AnyRef]]])
+            // Update enrolment records
+            cassandraOperation.updateRecordV2(requestContext, eventenrolmentDBInfo.getKeySpace, eventenrolmentDBInfo.getTableName, updateData._1, updateData._2, true)
+            if(updatedContent.get("status").asInstanceOf[Int] == 2) {
+              pushKaramPointsKafkaTopic(userId, contentId, batchId);
+            }
+          }
+        }
+      } else {
+        logger.info(requestContext, "EventConsumptionActor: addContent : No batch details found for batchId: " + batchId + "eventId:" + contentId)
+        throw new ProjectCommonException(ResponseCode.invalidRequestData.getErrorCode,
+          s"""No batch details found for, batchId: $batchId, eventId: $contentId""", ResponseCode.CLIENT_ERROR.getResponseCode)
+      }
+      contentIds.map(id => responseMessage.put(id, JsonKey.SUCCESS))
+      val response = new Response()
+      response.putAll(responseMessage)
+      Option(response)
+    } else None
+  }
+
+  /**
+   * Retrieves batch details for a given batch ID and event ID from the database.
+   *
+   * This method constructs a filter using the provided batch ID and event ID,
+   * queries the Cassandra database, and returns the result as a list of maps.
+   *
+   * @param requestContext The context of the request.
+   * @param batchId The ID of the batch to retrieve.
+   * @param eventId The ID of the event associated with the batch.
+   * @param requestedFields The fields to be retrieved (not used in the current implementation).
+   * @return A list of maps containing batch details.
+   */
+  def getBatches(requestContext: RequestContext, batchId: String, eventId: String, requestedFields: java.util.List[String]): java.util.List[java.util.Map[String, AnyRef]] = {
+    // Constructing filters for the query
+    val filters = new java.util.HashMap[String, AnyRef]() {
+      {
+        put(JsonKey.BATCH_ID, batchId)
+        put(JsonKey.EVENT_ID, eventId)
+      }
+    }
+    // Querying the Cassandra database for records
+    val response: Response = cassandraOperation.getRecords(requestContext, "sunbird_courses", "event_batch", filters, null)
+    val result: util.Map[String, AnyRef] = response.getResult
+    // Returning the list of batch details
+    result.get(JsonKey.RESPONSE).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+  }
+
+  /**
+   * Retrieves event consumption records for a specific user, event, and batch from the database.
+   *
+   * This method constructs a filter using the provided user ID, event ID, and batch ID,
+   * queries the Cassandra database, and returns the resulting consumption records as a list of maps.
+   *
+   * @param userId         The ID of the user for whom event consumption records are to be retrieved.
+   * @param eventId        The ID of the event related to the consumption records.
+   * @param batchId        The ID of the batch associated with the event.
+   * @param requestContext The context of the request.
+   * @return A list of maps containing event consumption records.
+   */
+  def getEventsConsumption(userId: String, contentId: String,contextId:String, batchId: String, requestContext: RequestContext): java.util.List[java.util.Map[String, AnyRef]] = {
+    // Constructing filters for querying event consumption records
+    val filters = new java.util.HashMap[String, AnyRef]() {
+      {
+        put("userid", userId)
+        put("batchid", batchId)
+        put("contentid", contentId)
+        put("contextid", contextId)
+      }
+    }
+    val response = cassandraOperation.getRecords(requestContext, eventConsumptionDBInfo.getKeySpace, eventConsumptionDBInfo.getTableName, filters, null)
+    // Extracting and returning the list of event consumption records from the response
+    response.getResult.getOrDefault(JsonKey.RESPONSE, new java.util.ArrayList[java.util.Map[String, AnyRef]]).asInstanceOf[java.util.List[java.util.Map[String, AnyRef]]]
+  }
+
+
+  def getLatestReadDetailsForEventStateUpdate(userId: String, batchId: String,contentId:String,contextId:String, contents: List[java.util.Map[String, AnyRef]]) = {
+    val lastAccessContent: java.util.Map[String, AnyRef] = contents.groupBy(x => x.getOrDefault(JsonKey.LAST_ACCESS_TIME_KEY, null).asInstanceOf[Date]).maxBy(_._1)._2.get(0)
+    val updateMap = new java.util.HashMap[String, AnyRef] () {{
+      put("lastreadcontentid", lastAccessContent.get(JsonKey.CONTENT_ID_KEY))
+      put("lastreadcontentstatus", lastAccessContent.get("status"))
+      put("lrc_progressdetails", lastAccessContent.get("progressdetails"))
+      put(JsonKey.LAST_CONTENT_ACCESS_TIME, lastAccessContent.get(JsonKey.LAST_ACCESS_TIME_KEY))
+
+
+    }}
+    val selectMap = new util.HashMap[String, AnyRef]() {{
+      put("batchid", batchId)
+      put("userid", userId)
+      put("contentid", contentId)
+      put("contextid", contextId)
+    }}
+    (selectMap, updateMap)
+  }
+
+  def pushKaramPointsKafkaTopic(userId: String, eventId: String, batchId: String) = {
+    val now = System.currentTimeMillis()
+    val event = s"""
+       |{
+       |  "user_id": $userId,
+       |  "ets": $now,
+       |  "batch_id":$batchId ,
+       |  "event_id": $eventId"
+       |}
+       |""".replaceAll("\n","")
+    if(pushTokafkaEnabled){
+      val topic = ProjectUtil.getConfigValue("user_claim_event_karma_point")
+      KafkaClient.send(userId, event, topic)
+    }
+  }
+
+
+  def processEventConsumption(inputContent: java.util.Map[String, AnyRef], existingContent: java.util.Map[String, AnyRef], userId: String) = {
+    var inputStatus = inputContent.getOrDefault(JsonKey.STATUS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number].intValue()
+    if (inputContent.get("completionPercentage").asInstanceOf[Double] >= 50.0.asInstanceOf[Double]) {
+      inputStatus = 2;
+      inputContent.put(JsonKey.STATUS, 2.asInstanceOf[AnyRef])
+    }
+    val updatedContent = new java.util.HashMap[String, AnyRef]()
+    updatedContent.putAll(inputContent)
+    val parsedMap = new java.util.HashMap[String, AnyRef]()
+    jsonFields.foreach(field =>
+      if(inputContent.containsKey(field)) {
+        parsedMap.put(field, mapper.writeValueAsString(inputContent.get(field)))
+      }
+    )
+    updatedContent.putAll(parsedMap)
+    val inputCompletedTime = parseDate(inputContent.getOrDefault(JsonKey.LAST_COMPLETED_TIME, "").asInstanceOf[String])
+    val inputAccessTime = parseDate(inputContent.getOrDefault(JsonKey.LAST_ACCESS_TIME, "").asInstanceOf[String])
+    if(MapUtils.isNotEmpty(existingContent)) {
+      val existingAccessTime = if(parseDate(existingContent.get(JsonKey.LAST_ACCESS_TIME).asInstanceOf[Date]) == null) parseDate(existingContent.getOrDefault(JsonKey.OLD_LAST_ACCESS_TIME, "").asInstanceOf[String]) else parseDate(existingContent.get(JsonKey.LAST_ACCESS_TIME).asInstanceOf[Date])
+      updatedContent.put(JsonKey.LAST_ACCESS_TIME, compareTime(existingAccessTime, inputAccessTime))
+      val inputProgress = inputContent.getOrDefault(JsonKey.PROGRESS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number].intValue()
+      val existingProgress = Option(existingContent.getOrDefault(JsonKey.PROGRESS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number]).getOrElse(0.asInstanceOf[Number]).intValue()
+      updatedContent.put(JsonKey.PROGRESS, List(inputProgress, existingProgress).max.asInstanceOf[AnyRef])
+      val existingStatus = Option(existingContent.getOrDefault(JsonKey.STATUS, 0.asInstanceOf[AnyRef]).asInstanceOf[Number]).getOrElse(0.asInstanceOf[Number]).intValue()
+      val existingCompletedTime = if (parseDate(existingContent.get(JsonKey.LAST_COMPLETED_TIME).asInstanceOf[Date]) == null) parseDate(existingContent.getOrDefault(JsonKey.OLD_LAST_COMPLETED_TIME, "").asInstanceOf[String]) else parseDate(existingContent.get(JsonKey.LAST_COMPLETED_TIME).asInstanceOf[Date])
+      if(inputStatus >= existingStatus) {
+        if(inputStatus >= 2 ) {
+          updatedContent.put(JsonKey.STATUS, 2.asInstanceOf[AnyRef])
+          updatedContent.put(JsonKey.PROGRESS, 100.asInstanceOf[AnyRef])
+          updatedContent.put(JsonKey.LAST_COMPLETED_TIME, compareTime(existingCompletedTime, inputCompletedTime))
+        }
+      } else {
+        updatedContent.put(JsonKey.STATUS, existingStatus.asInstanceOf[AnyRef])
+      }
+    } else {
+      if (inputStatus >= 2 ||  inputContent.get("completionPercentage").asInstanceOf[Double] >= 50.0.asInstanceOf[Double]) {
+        updatedContent.put(JsonKey.PROGRESS, 100.asInstanceOf[AnyRef])
+        updatedContent.put(JsonKey.LAST_COMPLETED_TIME, compareTime(null, inputCompletedTime))
+        updatedContent.put(JsonKey.STATUS, 2.asInstanceOf[AnyRef])
+      } else {
+        updatedContent.put(JsonKey.PROGRESS, 0.asInstanceOf[AnyRef])
+      }
+      updatedContent.put(JsonKey.LAST_ACCESS_TIME, compareTime(null, inputAccessTime))
+    }
+    updatedContent.put(JsonKey.LAST_UPDATED_TIME, ProjectUtil.getTimeStamp)
+    updatedContent.put(JsonKey.USER_ID, userId)
+    updatedContent
+  }
 }

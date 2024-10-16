@@ -132,6 +132,10 @@ public final class ContentUtil {
     return getContent(courseId, fields, new HashMap<String, String>());
   }
 
+  public static Map<String, Object> getContent(String eventId) {
+    return getEventContent(eventId);
+  }
+
   public static Map<String, Object> getContent(String courseId, List<String> fields, Map<String, String> incomingHeaders) {
     Map<String, Object> resMap = new HashMap<>();
     Map<String, String> headers = new HashMap<>();
@@ -147,6 +151,35 @@ public final class ContentUtil {
       logger.info(null, "making call for content read ==" + courseId);
       String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
 
+      logger.info(null, "Content read response", null, new HashMap<>(){{put("response", response);}});
+      Map<String, Object> data = mapper.readValue(response, Map.class);
+      if (MapUtils.isNotEmpty(data)) {
+        data = (Map<String, Object>) data.get(JsonKey.RESULT);
+        if (MapUtils.isNotEmpty(data)) {
+          Object content = data.get(JsonKey.CONTENT);
+          resMap.put(JsonKey.CONTENT, content);
+        }else {
+          logger.info(null, "EkStepRequestUtil:searchContent No data found");
+        }
+      } else {
+        logger.info(null, "EkStepRequestUtil:searchContent No data found");
+      }
+    } catch (IOException e) {
+      logger.error(null, "Error found during content search parse==" + e.getMessage(), e);
+    } catch (UnirestException e) {
+      logger.error(null, "Error found during content search parse==" + e.getMessage(), e);
+    }
+    return resMap;
+  }
+
+  public static Map<String, Object> getEventContent(String eventId) {
+    Map<String, Object> resMap = new HashMap<>();
+    Map<String, String> headers = new HashMap<>();
+    try {
+      String baseContentreadUrl = JsonKey.EKSTEP_BASE_URL + "/content/v4/read/" + eventId;
+      headers.put(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON);
+      logger.info(null, "making call for content read ==" + baseContentreadUrl);
+      String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
       logger.info(null, "Content read response", null, new HashMap<>(){{put("response", response);}});
       Map<String, Object> data = mapper.readValue(response, Map.class);
       if (MapUtils.isNotEmpty(data)) {
@@ -341,4 +374,43 @@ public final class ContentUtil {
     }
     return new HashMap<>();
   }
+
+  public static boolean getContentV4Read(String courseId, Map<String, String> allHeaders) {
+    boolean flag = false;
+    try {
+      Map<String, String> headers = new HashMap<String, String>();
+      if (allHeaders.containsKey(JsonKey.X_AUTH_USER_ORG_ID)) {
+        headers.put(JsonKey.X_AUTH_USER_ORG_ID, allHeaders.get(JsonKey.X_AUTH_USER_ORG_ID));
+      }
+      String baseContentreadUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL) + "/content/v4/read/" + courseId;
+      String response = HttpUtil.sendGetRequest(baseContentreadUrl, headers);
+      if (response != null && !response.isEmpty()) {
+        Map<String, Object> data = mapper.readValue(response, Map.class);
+        if (JsonKey.OK.equalsIgnoreCase((String) data.get(JsonKey.RESPONSE_CODE))) {
+          flag = true;
+        }
+      }
+    } catch (Exception e) {
+      logger.error(null, "User don't have access to this courseId " + courseId, e);
+    }
+    return flag;
+  }
+
+    public static boolean updateEventCollection(RequestContext requestContext, String collectionId, Map<String, Object> data) {
+        String response = "";
+        try {
+            String contentUpdateBaseUrl = ProjectUtil.getConfigValue(JsonKey.EKSTEP_BASE_URL);
+            Request request = new Request();
+            request.put("event", data);
+            response =
+                    HttpUtil.sendPatchRequest(
+                            contentUpdateBaseUrl
+                                    + PropertiesCache.getInstance().getProperty(JsonKey.EVENT_UPDATE_URL)
+                                    + collectionId, JsonUtil.serialize(request),
+                            headerMap);
+        } catch (Exception e) {
+            logger.error(requestContext, "Error while doing system update to collection " + e.getMessage(), e);
+        }
+        return JsonKey.SUCCESS.equalsIgnoreCase(response);
+    }
 }
