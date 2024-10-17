@@ -1,10 +1,6 @@
 package org.sunbird.enrolments
 
-import java.util
-import java.util.{Date, TimeZone, UUID}
 import com.fasterxml.jackson.databind.ObjectMapper
-
-import javax.inject.Inject
 import org.apache.commons.collections4.{CollectionUtils, MapUtils}
 import org.apache.commons.lang3.StringUtils
 import org.sunbird.cassandra.CassandraOperation
@@ -20,6 +16,10 @@ import org.sunbird.kafka.client.{InstructionEventGenerator, KafkaClient}
 import org.sunbird.learner.constants.{CourseJsonKey, InstructionEvent}
 import org.sunbird.learner.util.{ContentUtil, Util}
 
+import java.time.{ZoneId, ZonedDateTime}
+import java.util
+import java.util.{Date, TimeZone, UUID}
+import javax.inject.Inject
 import scala.collection.JavaConversions._
 import scala.collection.JavaConverters._
 import scala.language.postfixOps
@@ -624,6 +624,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
             if(updatedContent.get("status").asInstanceOf[Int] == 2 && inputContent.get("completionPercentage").toString.toDouble >= minPercetageToComplete) {
               pushKaramPointsKafkaTopic(userId, contentId, batchId);
               pushCertficateGenerateKafkaTopic(userId, contentId, batchId,completionPercentage);
+              pushEventCompletionKafkaTopic(userId, contentId, batchId,completionPercentage);
             }
           }
         }
@@ -700,12 +701,13 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
       put("lastreadcontentid", lastAccessContent.get(JsonKey.CONTENT_ID_KEY))
       put("lastreadcontentstatus", lastAccessContent.get("status"))
       put("lrc_progressdetails", lastAccessContent.get("progressdetails"))
-      put("completionPercentage", lastAccessContent.get("completionPercentage"))
+      put("completionpercentage", lastAccessContent.get("completionpercentage"))
       put("progress", lastAccessContent.get("progress"))
       put("status", lastAccessContent.get("status"))
       put(JsonKey.LAST_CONTENT_ACCESS_TIME, lastAccessContent.get(JsonKey.LAST_ACCESS_TIME_KEY))
-
-
+      val now = ZonedDateTime.now(ZoneId.of("Asia/Calcutta"))
+      val epochMillis = now.toInstant.toEpochMilli
+      put("completedon", java.lang.Long.valueOf(epochMillis))
     }}
     val selectMap = new util.HashMap[String, AnyRef]() {{
       put("batchid", batchId)
@@ -798,7 +800,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
         "action": "issue-event-certificate",
         "batchId": "$batchId",
         "eventId": "$eventId",
-        "userId": "$userId",
+        "userIds": ["$userId"],
         "eventCompletionPercentage": $completionPercentage
       },
       "eid": "BE_JOB_REQUEST",
@@ -811,6 +813,41 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
     }""".replaceAll("\n","")
     if(pushTokafkaEnabled){
       val topic = ProjectUtil.getConfigValue("user_issue_certificate_for_event")
+      KafkaClient.send(userId, event, topic)
+    }
+  }
+
+  private def pushEventCompletionKafkaTopic(userId: String, eventId: String, batchId: String,completionPercentage:Double) = {
+    val now = System.currentTimeMillis()
+    val event = s"""{
+    "actor":{
+      "id": "Event Consumption Alert",
+      "type": "System"
+      },
+      "context":{
+        "pdata":{
+          "ver": "1.0",
+          "id": "org.sunbird.learning.platform"
+          }
+      },
+      "edata": {
+        "action": "event-consumption-alert",
+        "batchId": "$batchId",
+        "type": "Event",
+        "typeId": "$eventId",
+        "userId": "$userId",
+        "completionPercentage": $completionPercentage
+      },
+      "eid": "BE_JOB_REQUEST",
+      "ets" : $now,
+      "mid" : "LMS.System",
+      "object": {
+        "id": "$userId",
+        "type": "EventConsumptionAlert"
+      }
+    }""".replaceAll("\n","")
+    if(pushTokafkaEnabled){
+      val topic = ProjectUtil.getConfigValue("dashboard_user_event_state")
       KafkaClient.send(userId, event, topic)
     }
   }
