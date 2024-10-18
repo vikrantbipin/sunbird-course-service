@@ -1174,6 +1174,7 @@ public final class JsonKey {
   public static final String EVENT_ENROLMENT_ALERT_ID = "Event-enrolment-alert";
   public static final String SYSTEM_KEY = "System";
   public static final String ENROLLED = "enrolled";
-
+  public static final String MEETING_LINK_URL = "meeting_link_url";
+  public static final String MEETING_LINK = "meetingLink";
   private JsonKey() {}
 }

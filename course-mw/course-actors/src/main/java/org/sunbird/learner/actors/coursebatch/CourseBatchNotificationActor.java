@@ -40,6 +40,7 @@ public class CourseBatchNotificationActor extends BaseActor {
   private static String contentBucket = PropertiesCache.getInstance().getProperty(JsonKey.CONTENT_BUCKET);
   private static String staticHostUrl = PropertiesCache.getInstance().getProperty(JsonKey.STATIC_HOST_URL);
   private static String profileUpdateUrl = PropertiesCache.getInstance().getProperty(JsonKey.PROFILE_UPDATE_URL);
+  private static String meetingLinkUrl = PropertiesCache.getInstance().getProperty(JsonKey.MEETING_LINK_URL);
   private static String courseBatchPath =
           PropertiesCache.getInstance().getProperty(JsonKey.COURSE_BATCH_PATH);
   private UserOrgService userOrgService = UserOrgServiceImpl.getInstance();
@@ -183,6 +184,7 @@ public class CourseBatchNotificationActor extends BaseActor {
     requestMap.put(JsonKey.COURSE_ID, courseBatchObject.get(JsonKey.COURSE_ID));
     requestMap.put(JsonKey.BATCH_NAME, courseBatch.getName());
     requestMap.put(JsonKey.COURSE_NAME, contentDetails.get(JsonKey.NAME));
+    requestMap.put(JsonKey.MEETING_LINK, meetingLinkUrl);
     requestMap.put(
         JsonKey.COURSE_BATCH_URL,
         getCourseBatchUrl(courseBatch.getCourseId(), courseBatch.getBatchId()));
