@@ -241,6 +241,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         val searchIdentifierMaxSize = Integer.parseInt(ProjectUtil.getConfigValue(JsonKey.SEARCH_IDENTIFIER_MAX_SIZE));
         if(JsonKey.VERSION_2.equalsIgnoreCase(version) &&
           JsonKey.TRUE.equalsIgnoreCase(ProjectUtil.getConfigValue(JsonKey.ENROLLMENT_LIST_CACHE_BATCH_FETCH_ENABLED))){
+            logger.info(request.getRequestContext, "Retrieving batch details from the local cache");
             for (i <- 0 to batchIds.size()-1) {
                 batchDetails.add(getBatchFrmLocalCache(batchIds.get(i)))
             }
