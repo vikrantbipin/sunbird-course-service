@@ -248,6 +248,9 @@ public enum ResponseCode {
   courseBatchAlreadyCompleted(
       ResponseMessage.Key.COURSE_BATCH_ALREADY_COMPLETED,
       ResponseMessage.Message.COURSE_BATCH_ALREADY_COMPLETED),
+  courseBatchAlreadyStarted(
+          ResponseMessage.Key.COURSE_BATCH_ALREADY_STARTED,
+          ResponseMessage.Message.COURSE_BATCH_ALREADY_STARTED),
   courseBatchEnrollmentDateEnded(
       ResponseMessage.Key.COURSE_BATCH_ENROLLMENT_DATE_ENDED,
       ResponseMessage.Message.COURSE_BATCH_ENROLLMENT_DATE_ENDED),
