@@ -1182,10 +1182,11 @@ public final class JsonKey {
   public static final String EVENT_COMPLETION_PERCENTAGE="eventCompletionPercentage";
   public static final String ISSUE_EVENT_CERTIFICATE = "issue-event-certificate";
   public static final String PROGRAM_CATEGORIES = "program_categories";
+  public static final String FLAG = "flag";
+  public static final String COURSECATEGORY = "courseCategory";
   public static final String REISSUE_DATE = "reIssueDate";
   public static final String INVALID_DATE_TIME = "Invalid date/time format. Expected format: yyyy-MM-dd HH:mm:ss";
   public static final String PROGRAM_CHILDREN_COURSES_ALLOWED_PRIMARY_CATEGORY = "program_children_courses_allowed_primary_category";
-  public static final String COURSECATEGORY = "courseCategory";
   public static final String EXTERNAL_COURSES_ENROLMENT_DB = "externalCoursesEnrolment_db";
   public static final String USER_COURSE_EXTERNAL_ENROLMENT_INFO = "userExternalCourseEnrolmentInfo";
   public static final String CB_PORES_SERVICE_BASE_URL = "cb_pores_service_base_url";
@@ -1196,6 +1197,7 @@ public final class JsonKey {
   public static final String PAGE_SIZE = "pageSize";
   public static final String FILTER_CRITERIA_MAP = "filterCriteriaMap";
   public static final String MAXIMUM_LIMIT_ALLOWED_FOR_ENROL_LIST ="maximum_allowed_limit_enrol_list";
+  public static final String CASE_STUDY = "case study";
 
     private JsonKey() {}
 }
