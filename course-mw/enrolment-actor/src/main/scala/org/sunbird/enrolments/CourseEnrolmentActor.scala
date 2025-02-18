@@ -104,7 +104,10 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         if (contentData.size() == 0 || !util.Arrays.asList(getConfigValue(JsonKey.COURSE_ENROLL_ALLOWED_PRIMARY_CATEGORY).split(","): _*).contains(contentData.get(JsonKey.PRIMARYCATEGORY).asInstanceOf[String]))
             ProjectCommonException.throwClientErrorException(ResponseCode.accessDeniedToEnrolOrUnenrolCourse, courseId);
         val batchData: CourseBatch = courseBatchDao.readById( courseId, batchId, request.getRequestContext)
-        val enrolmentData: util.List[UserCourses] = userCoursesDao.readV2(request.getRequestContext, userId, courseId)
+        var enrolmentData: util.List[UserCourses] = userCoursesDao.readV2(request.getRequestContext, userId, courseId)
+        if (CollectionUtils.isEmpty(enrolmentData)) {
+            enrolmentData = new util.ArrayList[UserCourses]();
+        }
         val batchUserData: BatchUser = batchUserDao.read(request.getRequestContext, batchId, userId)
         validateEnrolmentV3(batchData, enrolmentData, true)
         val dataBatch: util.Map[String, AnyRef] = createBatchUserMapping(batchId, userId,batchUserData)
@@ -982,7 +985,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         }
 
         // If enrolling, check if any active enrollment already exists
-        if (isEnrol) {
+        if (isEnrol && enrolmentData.nonEmpty) {
             enrolmentData.find(_.isActive) match {
                 case Some(enrolment) if enrolment.getBatchId == batchData.getBatchId =>
                     // User is already enrolled in the same batch
@@ -990,6 +993,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
                 case Some(_) =>
                     // User is already enrolled in a different batch
                     ProjectCommonException.throwClientErrorException(ResponseCode.userAlreadyEnrolledCourseWithDifferentBatch, ResponseCode.userAlreadyEnrolledCourseWithDifferentBatch.getErrorMessage)
+                case None => // No active enrollment found, continue processing
             }
         }
 
