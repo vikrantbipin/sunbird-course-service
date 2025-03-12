@@ -1,17 +1,23 @@
 package org.sunbird.learner.actors.event;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sunbird.actor.base.BaseActor;
 import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.response.Response;
 import org.sunbird.common.models.util.JsonKey;
+import org.sunbird.common.models.util.ProjectUtil;
 import org.sunbird.common.request.Request;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.keys.SunbirdKey;
 import org.sunbird.learner.actors.coursebatch.service.UserCoursesService;
 import org.sunbird.learner.actors.event.impl.EventEnrolmentDaoImpl;
 import org.sunbird.learner.util.Util;
+import org.sunbird.redis.RedisCache;
 
 import java.text.MessageFormat;
 import java.util.*;
@@ -19,9 +25,13 @@ import java.util.stream.Collectors;
 
 public class EventManagementActor extends BaseActor {
 
+    private static final Logger log = LoggerFactory.getLogger(EventManagementActor.class);
     private final UserCoursesService userCoursesService = new UserCoursesService();
 
     private EventEnrolmentDao eventBatchDao = new EventEnrolmentDaoImpl();
+    private RedisCache redisCache = new RedisCache();
+    private ObjectMapper mapper = new ObjectMapper();
+
 
     @Override
     public void onReceive(Request request) throws Throwable {
@@ -41,6 +51,15 @@ public class EventManagementActor extends BaseActor {
                 break;
             case "userEnrolList":
                 eventEnrollmentListForUser(request);
+                break;
+            case "getFeatureEvent":
+                getFeatureEvent(request);
+                break;
+            case "getTrendingEvent":
+                getTrendingEvent(request);
+                break;
+            case "getEnrolEventSummary":
+                getUserEnrolEventSummary(request);
                 break;
             default:
                 onReceiveUnsupportedOperation(requestedOperation);
@@ -157,5 +176,119 @@ public class EventManagementActor extends BaseActor {
             logger.error(request.getRequestContext(), "Exception in enrolment list for user: " + userId, e);
             throw e;
         }
+    }
+
+    private void getTrendingEvent(Request request) {
+        String userId = (String) request.get(JsonKey.USER_ID);
+        logger.info(request.getRequestContext(), "EventManagementActor: getTrendingEvent = " + userId);
+        try {
+            Map<String, Object> userData = eventBatchDao.getUserDetails(userId, request.getRequestContext());
+            if (MapUtils.isEmpty(userData)) {
+                log.error("EventManagementActor:getTrendingEvent: UserData not found with userId: {}", userId);
+                ProjectCommonException.throwServerErrorException(ResponseCode.RESOURCE_NOT_FOUND, "UserData not found");
+            }
+            String orgId = (String) userData.get(JsonKey.ROOT_ORG_ID);
+            if (StringUtils.isBlank(orgId)) {
+                log.error("EventManagementActor:getTrendingEvent: Root orgId not found with userId: {}", userId);
+                ProjectCommonException.throwServerErrorException(ResponseCode.invalidOrgId, "Root orgId not found");
+            }
+
+            String mapName = ProjectUtil.getConfigValue(JsonKey.TRENDING_EVENTS_REDIS_KEY);
+            int dbIndex = 12;
+            String eventData = redisCache.hget(mapName, orgId, dbIndex);
+            if (StringUtils.isBlank(eventData)) {
+                log.error("EventManagementActor:getTrendingEvent: No trending events found for orgId: {}", orgId);
+                Response response = new Response();
+                response.put(JsonKey.MESSAGE, "No Trending events found");
+                sender().tell(response, self());
+                return;
+            }
+            List<String> eventIds = Arrays.asList(eventData.split(","));
+            Response response = new Response();
+            response.put(JsonKey.EVENTS, eventIds);
+            sender().tell(response, self());
+        } catch (Exception e) {
+            logger.error(request.getRequestContext(), "Exception in eventGetTrending for user: ", e);
+            ProjectCommonException.throwServerErrorException(ResponseCode.SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    private void getFeatureEvent(Request request) {
+        logger.info(request.getRequestContext(), "EventManagementActor: getFeatureEvent ");
+        try {
+            String redisKey = ProjectUtil.getConfigValue(JsonKey.FEATURE_EVENTS_REDIS_KEY);
+            int dbIndex = 12;
+            String eventData = redisCache.getCache(redisKey, dbIndex);
+            if (StringUtils.isBlank(eventData)) {
+                log.error("EventManagementActor:getFeatureEvent: No Feature events found for redisKey: {}", redisKey);
+                Response response = new Response();
+                response.put(JsonKey.MESSAGE, "No Feature events found");
+                sender().tell(response, self());
+                return;
+            }
+            List<String> eventIds = Arrays.asList(eventData.split(","));
+            Response response = new Response();
+            response.put(JsonKey.EVENTS, eventIds);
+            sender().tell(response, self());
+        } catch (Exception e) {
+            logger.error(request.getRequestContext(), "Exception in eventGetFeature for user: ", e);
+            ProjectCommonException.throwServerErrorException(ResponseCode.SERVER_ERROR, e.getMessage());
+        }
+    }
+
+    private void getUserEnrolEventSummary(Request request) {
+        String userId = (String) request.get(JsonKey.USER_ID);
+        logger.info(request.getRequestContext(), "EventManagementActor: getUserEnrolEventSummary : UserId = " + userId);
+        try {
+            List<Map<String, Object>> allEnrolledEvents = eventBatchDao.getEventEnrolmentList(request, userId);
+            Map<String, Object> userCourseEnrolmentInfo = getUserEnrolmentEventInfo(request, allEnrolledEvents);
+            Response response = new Response();
+            response.put(JsonKey.USER_EVENT_ENROLMENT_INFO, userCourseEnrolmentInfo);
+            sender().tell(response, self());
+        } catch (Exception e) {
+            logger.error(request.getRequestContext(), "Exception in enrolment list for user: " + userId, e);
+            throw e;
+        }
+    }
+
+    private Map<String, Object> getUserEnrolmentEventInfo(Request request,
+                                                          List<Map<String, Object>> finalEnrolment) {
+        int eventsCompleted = 0;
+        int eventsEnrolled = 0;
+        int hoursSpentOnEvents = 0;
+        Map<String, Object> addInfo = new HashMap<>();
+
+        for (Map<String, Object> eventDetails : finalEnrolment) {
+            Integer eventStatus = (Integer) eventDetails.get(JsonKey.STATUS);
+            List<Map<String, Object>> userEventConsumption = (List<Map<String, Object>>) eventDetails.get(JsonKey.USER_EVENT_CONSUMPTION);
+
+            if (eventStatus != null && eventStatus == 2) {
+                eventsCompleted++;
+                eventsEnrolled++;
+            } else {
+                eventsEnrolled++;
+            }
+            int hoursSpentOnCourses = 0;
+            if (userEventConsumption != null && !userEventConsumption.isEmpty()) {
+                for (Map<String, Object> consumption : userEventConsumption) {
+                    String progressDetails = (String) consumption.get(JsonKey.PROGRESS_DETAILS);
+                    try {
+                        JsonNode progressDetailsJson = mapper.readTree(progressDetails);
+                        if (progressDetailsJson != null && progressDetailsJson.hasNonNull(JsonKey.DURATION)) {
+                            hoursSpentOnCourses += progressDetailsJson.get(JsonKey.DURATION).intValue();
+                        }
+                    } catch (Exception e) {
+                        logger.error(request.getRequestContext(), "Error parsing progressDetails JSON", e);
+                    }
+                }
+            }
+            hoursSpentOnEvents += hoursSpentOnCourses;
+        }
+
+        addInfo.put("eventsEnrolled", eventsEnrolled);
+        addInfo.put("eventsAttended", eventsCompleted);
+        addInfo.put("hoursSpentOnEvents", hoursSpentOnEvents);
+
+        return addInfo;
     }
 }

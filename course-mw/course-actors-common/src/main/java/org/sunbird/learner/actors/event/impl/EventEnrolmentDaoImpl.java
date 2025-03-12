@@ -5,7 +5,10 @@ package org.sunbird.learner.actors.event.impl;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.sunbird.cache.util.RedisCacheUtil;
 import org.sunbird.cassandra.CassandraOperation;
 import org.sunbird.common.models.response.Response;
@@ -24,6 +27,7 @@ import java.util.stream.Collectors;
 
 public class EventEnrolmentDaoImpl implements EventEnrolmentDao {
 
+    private static final Logger log = LoggerFactory.getLogger(EventEnrolmentDaoImpl.class);
     private final Map<String, Integer> statusMap;
 
     public EventEnrolmentDaoImpl() {
@@ -211,6 +215,78 @@ public class EventEnrolmentDaoImpl implements EventEnrolmentDao {
 
     private String getCacheKey(String eventId) {
         return eventId + ":user-event-enrolments";
+    }
+
+    public Map<String, Object> getUserDetails(String userId, RequestContext requestContext) {
+        try {
+            Response response = cassandraOperation.getUserRecordFromDB(JsonKey.KEYSPACE_SUNBIRD, JsonKey.TABLE_USER, userId, requestContext);
+
+            if (MapUtils.isEmpty(response.getResult())) {
+                log.warn("No user details found for userId: {}", userId);
+                return Collections.emptyMap();
+            }
+            ObjectMapper mapper = new ObjectMapper();
+            List<Map<String, Object>> userRecords = mapper.convertValue(response.getResult().get(JsonKey.RESPONSE),
+                    new TypeReference<List<Map<String, Object>>>() {});
+
+            return CollectionUtils.isEmpty(userRecords) ? Collections.emptyMap() : userRecords.get(0);
+
+        } catch (Exception e) {
+            log.error("Exception while fetching user details for userId: {}", userId, e);
+            throw new RuntimeException("Error fetching user details", e);
+        }
+    }
+
+    @Override
+    public List<Map<String, Object>> getEventEnrolmentList(Request request, String userId) {
+        logger.info(request.getRequestContext(), "EventEnrolmentDaoImpl:getEnrolmentList: UserId = " + userId);
+        List<Map<String, Object>> userEnrollmentList = new ArrayList<>();
+
+        Response res = cassandraOperation.getRecordsByPropertiesWithoutFiltering(request.getRequestContext(),
+                JsonKey.KEYSPACE_SUNBIRD_COURSES,
+                JsonKey.TABLE_USER_EVENT_ENROLMENTS,
+                JsonKey.USER_ID_KEY,
+                userId,
+                null
+        );
+        String status = request.get(JsonKey.STATUS) != null ? (String) request.get(JsonKey.STATUS) : null;
+        int limit = request.get(JsonKey.LIMIT) != null ? (int) request.get(JsonKey.LIMIT) : -1;
+        if (res != null && res.containsKey(JsonKey.RESPONSE) && res.get(JsonKey.RESPONSE) instanceof List && !((List<Map<String, Object>>) res.get(JsonKey.RESPONSE)).isEmpty()) {
+            userEnrollmentList = ((List<Map<String, Object>>) res.get(JsonKey.RESPONSE));
+            if (CollectionUtils.isNotEmpty(userEnrollmentList)) {
+                if (StringUtils.isNotEmpty(status) && statusMap.get(status) != null) {
+                    if (statusMap.get(status) == 1) {
+                        userEnrollmentList = userEnrollmentList.stream().filter(enrolment -> (int) enrolment.get(JsonKey.STATUS) != 2).collect(Collectors.toList());
+                    } else {
+                        userEnrollmentList = userEnrollmentList.stream().filter(enrolment -> (int) enrolment.get(JsonKey.STATUS) == statusMap.get(status)).collect(Collectors.toList());
+                    }
+                }
+                if (limit > -1 && limit != 0) {
+                    int maximumAllowedLimitForEnrolList = Integer.parseInt(ProjectUtil.getConfigValue(JsonKey.MAXIMUM_LIMIT_ALLOWED_FOR_ENROL_LIST));
+                    if (maximumAllowedLimitForEnrolList < limit) {
+                        limit = maximumAllowedLimitForEnrolList;
+                    }
+                    userEnrollmentList = userEnrollmentList.stream()
+                            .sorted(Comparator.comparing(
+                                            enrolment -> (Date) ((Map<String, Object>) enrolment).get(JsonKey.LAST_CONTENT_ACCESS_TIME),
+                                            Comparator.nullsLast(Comparator.naturalOrder())) // Null values last
+                                    .reversed()).collect(Collectors.toList());
+                    if (CollectionUtils.isNotEmpty(userEnrollmentList) && userEnrollmentList.size() > limit)
+                        userEnrollmentList = userEnrollmentList.subList(0, limit);
+                }
+            }
+
+
+            for (Map<String, Object> enrollment : userEnrollmentList) {
+                String contentId = (String) enrollment.get(JsonKey.CONTENT_ID);
+                String contextId = (String) enrollment.get(JsonKey.CONTEXT_ID_KEY);
+                String userid = (String) enrollment.get(JsonKey.USER_ID);
+                String batchId = (String) enrollment.get(JsonKey.BATCH_ID);
+                List<Map<String, Object>> userEventConsumption = getUserEventConsumption(request, userid, contentId, contextId, batchId);
+                enrollment.put("userEventConsumption", userEventConsumption);
+            }
+        }
+        return userEnrollmentList;
     }
 
 }
