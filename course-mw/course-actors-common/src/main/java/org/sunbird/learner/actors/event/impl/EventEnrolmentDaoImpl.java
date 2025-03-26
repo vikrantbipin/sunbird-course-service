@@ -367,6 +367,7 @@ public class EventEnrolmentDaoImpl implements EventEnrolmentDao {
                 LocalTime endTime = LocalTime.of(0, 1);
                 if (MapUtils.isNotEmpty(contentDetails)) {
                     if (calendarEventEnabled) {
+                        String endDateStr = (String) request.get("eventEndDate");
                         processCalendarEvent(
                                 request,
                                 enrollment,
@@ -379,7 +380,7 @@ public class EventEnrolmentDaoImpl implements EventEnrolmentDao {
                                 requestedEventType,
                                 endDateStr);
                     } else {
-                        actualEventType = determineEventType(endDateStr, endTime, contentDetails);
+                        actualEventType = determineEventType(endTime, contentDetails);
                         addEventDetailsToEnrollment(
                                 request,
                                 enrollment,
@@ -430,17 +431,17 @@ public class EventEnrolmentDaoImpl implements EventEnrolmentDao {
             }
         }
     }
-
-    private String determineEventType(
-            String endDateStr, LocalTime endTime, Map<String, Object> contentDetails) {
-        LocalDate endDate = LocalDate.parse(endDateStr);
+    private String determineEventType(LocalTime endTime, Map<String, Object> contentDetails) {
+        LocalDate currentDate = LocalDate.now();
         LocalDate eventEndDate = LocalDate.parse(contentDetails.get("endDate").toString());
         OffsetTime eventEndTime = OffsetTime.parse(contentDetails.get("endTime").toString());
-        if (eventEndDate.isBefore(endDate)
-                || (eventEndDate.isEqual(endDate)
+        LocalDate eventStartDate = LocalDate.parse(contentDetails.get("startDate").toString());
+        if (eventEndDate.isBefore(currentDate)
+                || (eventEndDate.isEqual(currentDate)
                 && eventEndTime.isBefore(OffsetTime.of(endTime, ZoneOffset.ofHoursMinutes(5, 30))))) {
             return "pastEvent";
-        } else if (eventEndDate.isEqual(endDate)) {
+        } else if (eventStartDate.isEqual(currentDate)) {
+
             return "presentEvent";
         } else {
             return "futureEvent";
