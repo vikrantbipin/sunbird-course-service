@@ -344,7 +344,7 @@ public final class ContentUtil {
             .getProperty(JsonKey.ENROL_FIELDS_LIST);
     queryFields.addAll(Arrays.asList(queryFieldsParam.split(",")));
     searchDTO.setFields(queryFields);
-    filters.put(JsonKey.MIME_TYPE, JsonKey.COLLECTION_MIME_TYPE);
+    filters.put(JsonKey.MIME_TYPE, Arrays.asList(JsonKey.COLLECTION_MIME_TYPE, JsonKey.QUESTION_SET_MIME_TYPE));
     List<String> status = new ArrayList<>();
     status.add(JsonKey.LIVE);
     status.add(JsonKey.RETIRED);
