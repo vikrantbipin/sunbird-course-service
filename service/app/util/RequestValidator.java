@@ -1134,11 +1134,11 @@ public final class RequestValidator {
     return isProgram;
   }
 
-  public static Map<String, Object> getCourseContent(String courseId) {
+  public static Map<String, Object> getCourseContent(String courseId) throws Exception {
     Map<String, Object> coursesMap = ContentCacheHandler.getContentMap();
     Map<String, Object> courseContent = (Map<String, Object>)coursesMap.get(courseId);
     if (courseContent == null || courseContent.isEmpty()) {
-      courseContent = ContentCacheHandler.getContent(courseId);
+      courseContent = ContentCacheHandler.getContentV2(courseId);
     }
     return courseContent;
   }
