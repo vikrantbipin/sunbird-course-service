@@ -182,6 +182,8 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         data.put(JsonKey.COURSE_ENROLL_DATE, enrolledTimestamp)
         val hasAccess = ContentUtil.getContentRead(courseId, request.getContext.getOrDefault(JsonKey.HEADER, new util.HashMap[String, String]).asInstanceOf[util.Map[String, String]])
         if (hasAccess) {
+            //Enrolling into children course if any
+            getCoursesForProgramAndEnrol(request, courseId, userId, batchId)
             upsertEnrollment(userId, courseId, batchId, data, dataBatch, (null == enrolmentData), request.getRequestContext)
             logger.info(request.getRequestContext, "CourseEnrolmentActor :: enroll :: Deleting redis for key " + getCacheKey(userId))
             cacheUtil.delete(getCacheKey(userId))
@@ -936,7 +938,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         inputCal.setTime(enrollmentEndDate)
         val currentCal = Calendar.getInstance(TimeZone.getTimeZone(ProjectUtil.getConfigValue(JsonKey.SUNBIRD_TIMEZONE)));
         currentCal.after(inputCal)
-    }
+    }t
 
     private def enrichCourseIdFromProgram(request: Request, courseIdList:  java.util.List[String]) = {
         if (CollectionUtils.isNotEmpty(courseIdList) && courseIdList.size() == 1) {
