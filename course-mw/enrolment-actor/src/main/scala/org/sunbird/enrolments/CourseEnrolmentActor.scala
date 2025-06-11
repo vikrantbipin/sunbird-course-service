@@ -938,7 +938,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         inputCal.setTime(enrollmentEndDate)
         val currentCal = Calendar.getInstance(TimeZone.getTimeZone(ProjectUtil.getConfigValue(JsonKey.SUNBIRD_TIMEZONE)));
         currentCal.after(inputCal)
-    }t
+    }
 
     private def enrichCourseIdFromProgram(request: Request, courseIdList:  java.util.List[String]) = {
         if (CollectionUtils.isNotEmpty(courseIdList) && courseIdList.size() == 1) {
