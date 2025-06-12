@@ -182,6 +182,7 @@ class CourseEnrolmentActor @Inject()(@Named("course-batch-notification-actor") c
         data.put(JsonKey.COURSE_ENROLL_DATE, enrolledTimestamp)
         val hasAccess = ContentUtil.getContentRead(courseId, request.getContext.getOrDefault(JsonKey.HEADER, new util.HashMap[String, String]).asInstanceOf[util.Map[String, String]])
         if (hasAccess) {
+            getCoursesForProgramAndEnrol(request, courseId, userId, batchId)
             upsertEnrollment(userId, courseId, batchId, data, dataBatch, (null == enrolmentData), request.getRequestContext)
             logger.info(request.getRequestContext, "CourseEnrolmentActor :: enroll :: Deleting redis for key " + getCacheKey(userId))
             cacheUtil.delete(getCacheKey(userId))
