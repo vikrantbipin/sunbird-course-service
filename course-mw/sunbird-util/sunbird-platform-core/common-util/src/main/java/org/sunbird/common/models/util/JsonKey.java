@@ -1215,7 +1215,7 @@ public final class JsonKey {
   public static final String USER_INFO_DB = "userInfo_db";
   public static final String ACCESS_SETTINGS_ENABLED = "accessSettingsEnabled";
   public static final String ACCESS_RULES = "accessRules";
-  public static final String BASIC = "basic";
+  public static final String BASIC_PROFILE = "basicProfile";
   public static final String COLON = ":";
   public static final String ACCESS_SETTINGS_DB = "access_settings_db";
   public static final String PROFILE_DETAILS = "profileDetails";
@@ -1224,6 +1224,11 @@ public final class JsonKey {
   public static final String DESIGNATION = "designation";
   public static final String CONTEXT_DATA = "contextData";
   public static final String ACCESS_CONTROL = "accessControl";
+  public static final String CADRE_NAME = "cadreName";
+  public static final String CIVIL_SERVICE_NAME = "civilServiceName";
+  public static final String CADRE_BATCH = "cadreBatch";
+  public static final String CADRE_DETAILS = "cadreDetails";
+  public static final String COMPLETION_PERCENTAGE="completionPercentage";
 
   private JsonKey() {}
 }

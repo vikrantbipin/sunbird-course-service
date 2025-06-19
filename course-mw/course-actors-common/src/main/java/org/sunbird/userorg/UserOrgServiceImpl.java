@@ -1,5 +1,6 @@
 package org.sunbird.userorg;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.HttpMethod;
 import com.mashape.unirest.http.HttpResponse;
@@ -244,11 +245,11 @@ public class UserOrgServiceImpl implements UserOrgService {
   }
 
   public Map<String, Object> getUserDetailsById(String id, RequestContext requestContext) throws Exception {
-    Map<String, Object> user = getUserByIdFromRedis(id);
-    if (MapUtils.isEmpty(user)) {
-      user = getUserByIdFromCassandra(id, requestContext);
-    }
-    return user;
+    //Map<String, Object> user = getUserByIdFromRedis(id);
+    //if (MapUtils.isEmpty(user)) {
+      return getUserByIdFromCassandra(id, requestContext);
+    //}
+    //return user;
   }
 
   private Map<String, Object> getUserByIdFromRedis(String id) throws Exception  {
@@ -256,7 +257,8 @@ public class UserOrgServiceImpl implements UserOrgService {
     Map<String, Object> userMap = null;
     if (StringUtils.isNotBlank(redisValue)) {
       try {
-        return new ObjectMapper().readValue(redisValue, Map.class);
+        return new ObjectMapper().readValue(redisValue, new TypeReference<Map<String, Object>>() {
+        });
       } catch (Exception e) {
         logger.error(null, "Error parsing user data from Redis for id: " + id, e);
         throwServerErrorException(ResponseCode.SERVER_ERROR, "Error parsing user data from Redis");
@@ -283,6 +285,6 @@ public class UserOrgServiceImpl implements UserOrgService {
   }
 
   private String getUserBasicProfileRedisKey(String userId) {
-    return JsonKey.USER + JsonKey.COLON + JsonKey.BASIC + JsonKey.COLON + userId;
+    return JsonKey.USER + JsonKey.COLON + JsonKey.BASIC_PROFILE + JsonKey.COLON + userId;
   }
 }
