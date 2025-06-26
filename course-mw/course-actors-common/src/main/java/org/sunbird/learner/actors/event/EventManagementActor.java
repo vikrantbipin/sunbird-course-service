@@ -2,6 +2,7 @@ package org.sunbird.learner.actors.event;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -267,7 +268,10 @@ public class EventManagementActor extends BaseActor {
             Integer eventStatus = (Integer) eventDetails.get(JsonKey.STATUS);
 
             if (eventStatus != null && eventStatus == 2) {
-                eventsCompleted++;
+                List<Map<String, Object>> certificatesIssued = (List<Map<String, Object>>)eventDetails.get(JsonKey.ISSUED_CERTIFICATES);
+                if (CollectionUtils.isNotEmpty(certificatesIssued)) {
+                    eventsCompleted++;
+                }
                 eventsEnrolled++;
             } else {
                 eventsEnrolled++;
