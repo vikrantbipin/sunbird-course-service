@@ -228,12 +228,12 @@ class CourseEnrolmentActorV3 @Inject()(implicit val  cacheUtil: RedisCacheUtil )
         }
       } else {
         var hoursSpentOnCourses: Int = 0
-        if (null != courseContent.get(JsonKey.DURATION)) {
-          hoursSpentOnCourses = courseContent.get(JsonKey.DURATION).asInstanceOf[String].toInt
-        }
-        hoursSpentOnCompletedCourses += hoursSpentOnCourses
         val certificatesIssue: java.util.ArrayList[util.Map[String, AnyRef]] = courseDetails.get(JsonKey.ISSUED_CERTIFICATES).asInstanceOf[java.util.ArrayList[util.Map[String, AnyRef]]]
         if (certificatesIssue.nonEmpty) {
+          if (null != courseContent.get(JsonKey.DURATION)) {
+            hoursSpentOnCourses = courseContent.get(JsonKey.DURATION).asInstanceOf[String].toInt
+          }
+          hoursSpentOnCompletedCourses += hoursSpentOnCourses
           certificateIssued += 1
         }
       }

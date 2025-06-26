@@ -266,10 +266,12 @@ public class EventManagementActor extends BaseActor {
 
         for (Map<String, Object> eventDetails : finalEnrolment) {
             Integer eventStatus = (Integer) eventDetails.get(JsonKey.STATUS);
+            boolean isCertificateExist = false;
 
             if (eventStatus != null && eventStatus == 2) {
                 List<Map<String, Object>> certificatesIssued = (List<Map<String, Object>>)eventDetails.get(JsonKey.ISSUED_CERTIFICATES);
                 if (CollectionUtils.isNotEmpty(certificatesIssued)) {
+                    isCertificateExist = true;
                     eventsCompleted++;
                 }
                 eventsEnrolled++;
@@ -280,7 +282,7 @@ public class EventManagementActor extends BaseActor {
             String lrcProgressDetails = (String) eventDetails.get(JsonKey.LRC_PROGRESS_DETAILS);
             try {
                 JsonNode lrcProgressDetailsJson = mapper.readTree(lrcProgressDetails);
-                if (lrcProgressDetailsJson != null && lrcProgressDetailsJson.hasNonNull(JsonKey.DURATION)) {
+                if (lrcProgressDetailsJson != null && lrcProgressDetailsJson.hasNonNull(JsonKey.DURATION) && isCertificateExist) {
                     String durationValue=lrcProgressDetailsJson.get(JsonKey.DURATION).asText();
                     int duration = parseDurationValue(durationValue);
                     hoursSpentOnCourses += duration;
