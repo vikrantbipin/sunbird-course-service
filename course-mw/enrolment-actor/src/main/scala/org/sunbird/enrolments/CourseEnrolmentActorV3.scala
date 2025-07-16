@@ -91,7 +91,7 @@ class CourseEnrolmentActorV3 @Inject()(implicit val  cacheUtil: RedisCacheUtil )
     val externalEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getExternalEnrollments(userId, request)
     val allEnrolledCourses = new java.util.ArrayList[java.util.Map[String, AnyRef]]
     isRetiredCoursesIncludedInEnrolList = true
-    val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails_v2(activeEnrolments, false)
+    val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails_v2(activeEnrolments, true)
     val updatedEnrolmentList = updateProgressData(enrolmentList, request.getRequestContext)
     if (CollectionUtils.isNotEmpty(updatedEnrolmentList)) {
       allEnrolledCourses.addAll(updatedEnrolmentList)
@@ -221,17 +221,34 @@ class CourseEnrolmentActorV3 @Inject()(implicit val  cacheUtil: RedisCacheUtil )
       case _ => null
     }
 
+    val statusFilteredEnrolments = scala.collection.mutable.ArrayBuffer[java.util.List[java.util.Map[String, AnyRef]]]()
+
     if (CollectionUtils.isNotEmpty(enrolments)) {
       enrolments = enrolments.filter(e => e.getOrDefault(JsonKey.ACTIVE, false.asInstanceOf[AnyRef]).asInstanceOf[Boolean]).toList.asJava
-      // Map status strings to their integer values, ignoring unknown statuses
-      if (status != null) {
-        val statusValues: Set[Int] = status.flatMap(s => statusMap.get(s)).toSet
-        if (statusValues.nonEmpty) {
-          enrolments = enrolments
-            .filter(e => statusValues.contains(e.getOrDefault(JsonKey.STATUS, (-1).asInstanceOf[AnyRef]).asInstanceOf[Int]))
-            .toList
-            .asJava
+      if (status != null && status.nonEmpty && status.exists(s => statusMap.contains(s))) {
+        for (statusValue <- status) {
+          if (statusMap.get(statusValue).contains(1)) {
+            statusFilteredEnrolments.append(
+              enrolments
+                .filter(e => e.getOrDefault(JsonKey.STATUS, (-1).asInstanceOf[AnyRef]).asInstanceOf[Integer] != 2)
+                .toList
+                .asJava
+            )
+          } else {
+            statusFilteredEnrolments.append(
+              enrolments
+                .filter(e => e.getOrDefault(JsonKey.STATUS, (-1).asInstanceOf[AnyRef]).asInstanceOf[Integer] == 2)
+                .toList
+                .asJava
+            )
+          }
         }
+      }
+
+      enrolments = if (statusFilteredEnrolments.nonEmpty) {
+        statusFilteredEnrolments.flatten.toList.asJava
+      } else {
+        enrolments
       }
 
       var limit: Integer = if (request.get(JsonKey.LIMIT) != null)  request.get(JsonKey.LIMIT).asInstanceOf[Integer] else -1
