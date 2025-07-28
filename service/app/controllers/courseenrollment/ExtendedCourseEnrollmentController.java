@@ -1,0 +1,129 @@
+package controllers.courseenrollment;
+
+import akka.actor.ActorRef;
+import controllers.BaseController;
+import controllers.courseenrollment.validator.CourseEnrollmentRequestValidator;
+import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.sunbird.common.models.util.JsonKey;
+import org.sunbird.common.request.Request;
+import play.mvc.Http;
+import play.mvc.Result;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
+public class ExtendedCourseEnrollmentController extends BaseController {
+
+    @Inject
+    @Named("extended-course-enrolment-actor")
+    private ActorRef extendedCourseEnrolmentActor;
+
+    private CourseEnrollmentRequestValidator validator = new CourseEnrollmentRequestValidator();
+
+    public CompletionStage<Result> enrollCourseWithLanguage(Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "enrollV2",
+                httpRequest.body().asJson(),
+                (requestObj) -> {
+                    Request req = (Request) requestObj;
+                    Map<String, Object> requestMap = req.getRequest();
+
+                    // Extract courseId from COURSE_ID or COLLECTION_ID
+                    String courseIdKey = requestMap.containsKey(JsonKey.COURSE_ID) ? JsonKey.COURSE_ID : JsonKey.COLLECTION_ID;
+                    String courseId = (String) requestMap.get(courseIdKey);
+                    requestMap.put(JsonKey.COURSE_ID, courseId);
+
+                    // Extract batchId
+                    String batchId = (String) requestMap.get(JsonKey.BATCH_ID);
+                    String userId = (String) req.getContext().getOrDefault(JsonKey.REQUESTED_FOR, req.getContext().get(JsonKey.REQUESTED_BY));
+                    requestMap.put(JsonKey.USER_ID, userId);
+                    // Normalize language if present
+                    String reqLang = null;
+                    if (requestMap.containsKey(JsonKey.LANGUAGE)) {
+                        reqLang = ((String) requestMap.get(JsonKey.LANGUAGE));
+                        requestMap.put(JsonKey.LANGUAGE, reqLang);
+                    }
+                    logger.info(req.getRequestContext(),
+                            "extendedCourseEnrolmentActor : enrollCourseWithLanguage request received, userId=" + userId +
+                                    ", courseId=" + courseId + ", batchId=" + batchId + ",RequestLanguage" + reqLang);
+
+                    // Validations
+                    validator.validateRequestedBy(userId);
+                    validator.validateEnrollCourse(req);
+                    validator.validateEnrolmentCriteria(req, true, false);
+                    Map<String, String> validatedLangAndContent = validator.validateLanguageSupport(reqLang, courseId);
+                    if (MapUtils.isNotEmpty(validatedLangAndContent)
+                            && StringUtils.isNotBlank(MapUtils.getString(validatedLangAndContent, JsonKey.COURSE_ID))) {
+                        requestMap.put(JsonKey.RECENT_LANGUAGE, validatedLangAndContent.get(JsonKey.RECENT_LANGUAGE));
+                        requestMap.put(JsonKey.COURSE_ID, validatedLangAndContent.get(JsonKey.COURSE_ID));
+                    }
+                    return null;
+                },
+                getAllRequestHeaders(httpRequest),
+                httpRequest);
+    }
+
+    public CompletionStage<Result> getEnrolledCoursesDetails(String uid, Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "enrolV3Details",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    String userId = (String) request.getContext().getOrDefault(JsonKey.REQUESTED_FOR, request.getContext().get(JsonKey.REQUESTED_BY));
+                    validator.validateRequestedBy(userId);
+                    request.getContext().put(JsonKey.USER_ID, userId);
+                    request.getRequest().put(JsonKey.USER_ID, userId);
+                    validator.validateEnrollListRequestDetails(request);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
+    public CompletionStage<Result> getEnrolledCourses(String uid, Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "list",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    String userId = (String) request.getContext().getOrDefault(JsonKey.REQUESTED_FOR, request.getContext().get(JsonKey.REQUESTED_BY));
+                    validator.validateRequestedBy(userId);
+                    request.getContext().put(JsonKey.USER_ID, userId);
+                    request.getRequest().put(JsonKey.USER_ID, userId);
+                    validator.validateEnrollListRequest(request);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
+    public CompletionStage<Result> privateGetEnrolledCoursesV3(String uid, Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "privateList",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    request.getRequest().put(JsonKey.USER_ID, uid);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
+    public CompletionStage<Result> enrolmentUserInfoStats(String uid, Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "enrolmentInfoStats",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    String userId = (String) request.getContext().getOrDefault(JsonKey.REQUESTED_FOR, request.getContext().get(JsonKey.REQUESTED_BY));
+                    validator.validateRequestedBy(userId);
+                    request.getContext().put(JsonKey.USER_ID, userId);
+                    request.getRequest().put(JsonKey.USER_ID, userId);
+                    return null;
+                },
+                null,
+                null,
+                getAllRequestHeaders((httpRequest)),
+                false,
+                httpRequest);
+    }
+}

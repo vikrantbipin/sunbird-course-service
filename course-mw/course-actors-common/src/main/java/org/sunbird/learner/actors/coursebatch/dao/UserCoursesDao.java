@@ -72,4 +72,14 @@ public interface UserCoursesDao {
   List<UserCourses> readAll(RequestContext requestContext, String userId, String courseId);
 
   List<Map<String, Object>> getEnrolmentByBatchIdAndCourseId(RequestContext requestContext, String userId, String courseId, String batchId);
+
+  Response updateExtendedEnrollV2(RequestContext requestContext, String userId, String courseId, String batchId, Map<String, Object> updateAttributes);
+
+  Response insertExtendedEnrollmentV2(RequestContext requestContext, Map<String, Object> userCoursesDetails);
+
+  List<UserCourses> extendedReadV2(RequestContext requestContext, String userId, String courseId);
+
+  List<Map<String, Object>> listEnrolments_v2(RequestContext requestContext, String userId, List<String> courseIdList);
+
+  List<Map<String, Object>> getEnrolmentByBatchIdAndCourseId_v2(RequestContext requestContext, String userId, String courseId, String batchId);
 }

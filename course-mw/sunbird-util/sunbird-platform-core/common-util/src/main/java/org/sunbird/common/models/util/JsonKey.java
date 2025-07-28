@@ -1230,6 +1230,23 @@ public final class JsonKey {
   public static final String CADRE_DETAILS = "cadreDetails";
   public static final String COMPLETION_PERCENTAGE="completionPercentage";
   public static final String CADRE = "cadre";
+  public static final String KEYSPACE_SUNBIRD_RESOURCE = "sunbird_resource";
+  public static final String USER_ENTITY_CONSUMPTION = "user_entity_consumption";
+  public static final String LANGUAGE_MAP ="languageMapV1";
+  public static final String RECENT_LANGUAGE = "recent_language";
+  public static final String USER_ENROLMENTS_V2_DB ="user_enrolments_v2";
+  public static final String LANGUAGE_NOT_IN_BASE_OR_MAP = "Requested language [%s] is not available in the base language or language map.";
+  public static final String MULTILINGUAL_COURSE = "Multilingual Course";
+  public static final String LANGUAGE_NOT_LIVE = "Requested language [%s] is not Live. Found status: %s";
+  public static final String LANGUAGE_AND_BASE_MISSING = "Both requested and base language are missing for courseId: %s";
+  public static final String LANGUAGE_MISSING_FOR_MULTILINGUAL_COURSE = "Cannot enroll in a course with 'Multilingual Course' category.";
+  public static final String MULTILINGUAL_COURSE_PROGRESS_UPDATE_ERROR = "Invalid course category for progress update. Progress cannot be updated for courses categorized as 'Multilingual Course'.";
+  public static final String LANGUAGE_PROGRESS = "languageProgress";
+  public static final String LANG_CONTENT_STATUS = "langContentStatus";
+  public static final String LEAF_NODES = "leafNodes";
+  public static final String MULTILINGUAL_COURSE_SWITCH_LOG = "Multilingual course detected. Switching contentId to base language contentId= ";
+  public static final String ERROR_MULTILINGUAL_BASE_LANG_NOT_FOUND = "Base language content not found or not live in languageMapV1 for multilingual course.";
+  public static final String IS_BASE_LANGUAGE = "isBaseLanguage";
   public static final String EXTERNAL_COURSES = "external_courses";
 
   private JsonKey() {}
