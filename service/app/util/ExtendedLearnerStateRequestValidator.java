@@ -55,38 +55,34 @@ public class ExtendedLearnerStateRequestValidator extends BaseRequestValidator {
         Map<String, Object> courseContent = fetchCourseContent(courseId);
         Map<String, Object> languageMapV1 = (Map<String, Object>) courseContent.get(JsonKey.LANGUAGE_MAP);
 
-        if (StringUtils.isNotBlank(incomingLang)) {
-            if (incomingLang.toLowerCase().equalsIgnoreCase(recentLang.toLowerCase()) && CollectionUtils.isEmpty(contentIds)) {
-                //String multiCourseId = languageMapV1.get(incomingLang.toLowerCase());
-                Map<String, Object> langEntry = (Map<String, Object>) languageMapV1.get(incomingLang.toLowerCase());
-                String multiCourseId = (String) langEntry.get(JsonKey.ID);
-                List<String> leafNodes = fetchLeafNodes(multiCourseId);
-                request.getRequest().put(JsonKey.CONTENT_IDS, leafNodes);
-            } else if (CollectionUtils.isEmpty(contentIds)) {
-                Map<String, Object> langEntry = (Map<String, Object>) languageMapV1.get(incomingLang.toLowerCase());
-                String multiCourseId = (String) langEntry.get(JsonKey.ID);
-                List<String> leafNodes = fetchLeafNodes(multiCourseId);
-                request.getRequest().put(JsonKey.CONTENT_IDS, leafNodes);
-            }
-            request.getRequest().put(JsonKey.LANGUAGE, incomingLang.toLowerCase());
-            return;
+        String finalLang = StringUtils.isNotBlank(incomingLang)
+                ? incomingLang.toLowerCase()
+                : StringUtils.isNotBlank(recentLang)
+                ? recentLang.toLowerCase()
+                : null;
+
+        if (StringUtils.isBlank(finalLang)) {
+            throw new ProjectCommonException(
+                    ResponseCode.languageRequired.getErrorCode(),
+                    "Language is not provided and no recent_language found.",
+                    ERROR_CODE
+            );
         }
 
-        if (StringUtils.isBlank(incomingLang)) {
-            if (StringUtils.isNotBlank(recentLang)) {
-                Map<String, Object> langEntry = (Map<String, Object>) languageMapV1.get(recentLang.toLowerCase());
-                String multiCourseId = (String) langEntry.get(JsonKey.ID);
-                List<String> leafNodes = fetchLeafNodes(multiCourseId);
-                request.getRequest().put(JsonKey.LANGUAGE, recentLang.toLowerCase());
-                request.getRequest().put(JsonKey.CONTENT_IDS, leafNodes);
-                return;
-            } else {
-                throw new ProjectCommonException(
-                        ResponseCode.languageRequired.getErrorCode(),
-                        "Language is not provided and no recent_language found.",
-                        ERROR_CODE
-                );
-            }
+        if (CollectionUtils.isEmpty(contentIds)) {
+            List<String> leafNodes = getLeafNodesForLanguage(courseId, finalLang, languageMapV1);
+            request.getRequest().put(JsonKey.CONTENT_IDS, leafNodes);
+        }
+        request.getRequest().put(JsonKey.LANGUAGE, finalLang);
+    }
+
+    private List<String> getLeafNodesForLanguage(String courseId, String lang, Map<String, Object> languageMapV1) {
+        if (MapUtils.isNotEmpty(languageMapV1) && languageMapV1.containsKey(lang)) {
+            Map<String, Object> langEntry = (Map<String, Object>) languageMapV1.get(lang);
+            String multiCourseId = (String) langEntry.get(JsonKey.ID);
+            return fetchLeafNodes(multiCourseId);
+        } else {
+            return fetchLeafNodes(courseId);
         }
     }
 
