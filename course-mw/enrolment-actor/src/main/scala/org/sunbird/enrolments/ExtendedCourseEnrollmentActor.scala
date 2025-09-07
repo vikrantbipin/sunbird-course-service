@@ -740,7 +740,7 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
 
       // New logic: update contentStatus if recentLanguage is present and contentStatus is null
       val recentLanguage = enrolment.get("recent_language")
-      val contentStatus = enrolment.get("contentstatus")
+      val contentStatus = enrolment.get("contentStatus")
       val languageMapV1 = enrolment.get("langContentStatus").asInstanceOf[java.util.Map[String, AnyRef]]
 
       if (recentLanguage != null && (contentStatus == null || StringUtils.isBlank(contentStatus.toString)) && languageMapV1 != null) {
