@@ -12,8 +12,11 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.HttpHeaders;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.VelocityEngine;
 import org.json.JSONObject;
 import org.sunbird.actor.base.BaseActor;
+import org.sunbird.cassandra.CassandraOperation;
 import org.sunbird.common.CassandraUtil;
 import org.sunbird.common.Constants;
 import org.sunbird.common.ElasticSearchHelper;
@@ -23,11 +26,13 @@ import org.sunbird.common.inf.ElasticSearchService;
 import org.sunbird.common.models.response.Response;
 import org.sunbird.common.models.util.*;
 import org.sunbird.common.models.util.ProjectUtil.ProgressStatus;
+import org.sunbird.common.models.util.fcm.Notification;
 import org.sunbird.common.request.Request;
 import org.sunbird.common.request.RequestContext;
 import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.common.util.JsonUtil;
 import org.sunbird.dto.SearchDTO;
+import org.sunbird.helper.ServiceFactory;
 import org.sunbird.learner.actors.coursebatch.dao.BatchUserDao;
 import org.sunbird.learner.actors.coursebatch.dao.CourseBatchDao;
 import org.sunbird.learner.actors.coursebatch.dao.UserCoursesDao;
@@ -36,10 +41,7 @@ import org.sunbird.learner.actors.coursebatch.dao.impl.CourseBatchDaoImpl;
 import org.sunbird.learner.actors.coursebatch.dao.impl.UserCoursesDaoImpl;
 import org.sunbird.learner.actors.coursebatch.service.UserCoursesService;
 import org.sunbird.learner.constants.CourseJsonKey;
-import org.sunbird.learner.util.ContentSearchUtil;
-import org.sunbird.learner.util.ContentUtil;
-import org.sunbird.learner.util.CourseBatchUtil;
-import org.sunbird.learner.util.Util;
+import org.sunbird.learner.util.*;
 import org.sunbird.models.batch.user.BatchUser;
 import org.sunbird.models.course.batch.CourseBatch;
 import org.sunbird.telemetry.util.TelemetryUtil;
@@ -50,6 +52,7 @@ import scala.concurrent.Future;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.ws.rs.core.MediaType;
+import java.io.StringWriter;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
@@ -57,15 +60,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.sunbird.common.models.util.JsonKey.ID;
@@ -82,6 +77,8 @@ public class CourseBatchManagementActor extends BaseActor {
   private String timeZone = ProjectUtil.getConfigValue(JsonKey.SUNBIRD_TIMEZONE);
   private BatchUserDao batchUserDao = new BatchUserDaoImpl();
   private UserCoursesDao userCoursesDao = new UserCoursesDaoImpl();
+  private CassandraOperation cassandraOperation = ServiceFactory.getInstance();
+  private HelperMethodService helperMethodService = new HelperMethodService();
 
   @Inject
   @Named("course-batch-notification-actor")
@@ -652,7 +649,7 @@ public class CourseBatchManagementActor extends BaseActor {
   }
 
   private Map<String, Object> getContentDetails(RequestContext requestContext, String courseId, Map<String, String> headers) {
-    Map<String, Object> ekStepContent = ContentUtil.getContent(courseId, Arrays.asList("status", "batches", "leafNodesCount", "primaryCategory"));
+      Map<String, Object> ekStepContent = ContentUtil.getContent(courseId, Arrays.asList(JsonKey.CONTENT_READ_REQUIRED_FIELDS.split(",")));
     logger.info(requestContext, "CourseBatchManagementActor:getEkStepContent: courseId: " + courseId, null,
             ekStepContent);
     String status = (String) ((Map<String, Object>)ekStepContent.getOrDefault("content", new HashMap<>())).getOrDefault("status", "");
@@ -913,9 +910,12 @@ public class CourseBatchManagementActor extends BaseActor {
         Map<String, Object> esCourseMap = CourseBatchUtil.esCourseMapping(updatedCourseObject, dateFormat);
         CourseBatchUtil.syncCourseBatchForeground(actorMessage.getRequestContext(), batchId, esCourseMap);
         updateCollectionAfterBatchDelete(actorMessage.getRequestContext(), esCourseMap, contentDetails);
-        unenrollUsersFromBatch(actorMessage.getRequestContext(), courseId, batchId);
+        List<String> userIds = unenrollUsersFromBatch(actorMessage.getRequestContext(), courseId, batchId,contentDetails,batchDetails);
         result.put(JsonKey.MESSAGE, "Batch deleted successfully");
         sender().tell(result, self());
+        if(CollectionUtils.isNotEmpty(userIds)) {
+            notifyUserUnenrollment(actorMessage.getRequestContext(), userIds, contentDetails, batchDetails, courseId);
+        }
     }
 
     private void updateCollectionAfterBatchDelete(RequestContext requestContext, Map<String, Object> courseBatch, Map<String, Object> contentDetails) {
@@ -937,15 +937,16 @@ public class CourseBatchManagementActor extends BaseActor {
         );
     }
 
-    private void unenrollUsersFromBatch(RequestContext ctx, String courseId, String batchId) throws Exception {
+    private List<String> unenrollUsersFromBatch(RequestContext ctx, String courseId, String batchId, Map<String, Object> contentDetails,CourseBatch batchDetails) throws Exception {
         // Get all users from enrollment_batch_lookup for the batch
         RequestContext requestContext = ctx;
         List<BatchUser> batchUsers = batchUserDao.readById(ctx, batchId);
 
         if (CollectionUtils.isEmpty(batchUsers)) {
             ProjectLogger.log("No users enrolled for batch: " + batchId, LoggerEnum.INFO.name());
-            return;
+            return new ArrayList<>();
         }
+        List<String> userIds = new ArrayList<>();
 
         for (BatchUser batchUser : batchUsers) {
             String userId = batchUser.getUserId();
@@ -957,7 +958,9 @@ public class CourseBatchManagementActor extends BaseActor {
             upsertEnrollment(userId, courseId, batchId, data, dataBatch, false, requestContext);
 
             ProjectLogger.log("Unenrolled user: " + userId + " from batch: " + batchId, LoggerEnum.INFO.name());
+            userIds.add(userId);
         }
+        return userIds;
     }
 
     public static Map<String, Object> createBatchUserMapping(String batchId, String userId, BatchUser batchUserData, boolean isActive) {
@@ -1013,4 +1016,84 @@ public class CourseBatchManagementActor extends BaseActor {
         }
     }
 
+    private void notifyUserUnenrollment(RequestContext requestContext, List<String> userIds, Map<String, Object> contentDetails, CourseBatch batchDetails, String courseId) {
+        List<String> emailsIds = ContentUtil.getUserEmails(userIds, requestContext);
+        if (CollectionUtils.isNotEmpty(emailsIds)) {
+            Map<String, Object> params = new HashMap<>();
+            Map<String, Object> notificationRequest = new HashMap<>();
+            Map<String, Object> action = new HashMap<>();
+            Map<String, Object> usermap = new HashMap<>();
+            Map<String, Object> template = new HashMap<>();
+
+            params.put(Constants.BATCH, batchDetails.getName());
+            params.put(Constants.PROGRAM, contentDetails.get(JsonKey.NAME));
+
+
+            template.put(Constants.DATA, constructEmailTemplate(Constants.BATCH_DELETE_USER_NOTIFY_TEMPLATE, params, requestContext));
+            template.put(Constants.ID, Constants.BATCH_DELETE_USER_NOTIFY_TEMPLATE);
+            template.put(Constants.PARAMS, params);
+            template.put(Constants.TYPE, Constants.EMAIL);
+            usermap.put(Constants.ID, requestContext.getActorId());
+            usermap.put(Constants.TYPE, Constants.USER);
+            action.put(Constants.TYPE, Constants.EMAIL);
+            action.put(Constants.CATEGORY, Constants.EMAIL);
+            action.put(Constants.CREATED_BY, usermap);
+            Map<String, Object> config = new HashMap<>();
+            config.put(Constants.SUBJECT, Constants.DELETE_BATCH_MAIL_SUBJECT);
+            config.put(Constants.SENDER, ProjectUtil.getConfigValue(Constants.SUPPORT_MAIL));
+            template.put(Constants.CONFIG, config);
+            action.put(Constants.TEMPLATE, template);
+            notificationRequest.put(Constants.TYPE, Constants.EMAIL);
+            notificationRequest.put(Constants.PRIORITY, 1);
+            notificationRequest.put(Constants.IDS, Arrays.asList());
+            notificationRequest.put(Constants.BCC_IDS, emailsIds);
+            notificationRequest.put(Constants.ACTION, action);
+
+            Map<String, Object> req = new HashMap<>();
+            Map<String, List<Map<String, Object>>> notificationMap = new HashMap<>();
+            notificationMap.put(Constants.NOTIFICATIONS, Collections.singletonList(notificationRequest));
+            req.put(Constants.REQUEST, notificationMap);
+            Notification.sendNotificationAsync(req);
+
+            Map<String, Object> message = new HashMap<>();
+            Map<String, Object> data = new HashMap<>();
+            data.put(JsonKey.COURSE_ID, courseId);
+            message.put(JsonKey.DATA, data);
+            message.put(JsonKey.PLACE_HOLDERS, params);
+
+            helperMethodService.sendNotification(JsonKey.DELETED_BATCH, JsonKey.ALERT, userIds, message);
+        } else {
+            logger.info(requestContext, "No emails found for users");
+        }
+    }
+
+    private String constructEmailTemplate(String templateName, Map<String, Object> params, RequestContext requestContext) {
+        String replacedHTML = new String();
+        try {
+            Map<String, Object> propertyMap = new HashMap<>();
+            propertyMap.put(Constants.NAME, templateName);
+            List<Map<String, Object>> templateMap = null;
+            Response clientResponse =
+                    cassandraOperation.getRecordsByProperties(Constants.KEYSPACE_SUNBIRD, Constants.TABLE_EMAIL_TEMPLATE, propertyMap, Collections.singletonList(Constants.TEMPLATE), requestContext);
+            if (null != clientResponse && !clientResponse.getResult().isEmpty()) {
+                templateMap = (List<Map<String, Object>>) clientResponse.getResult().get(JsonKey.RESPONSE);
+            }
+            String htmlTemplate = templateMap.stream()
+                    .findFirst()
+                    .map(template -> (String) template.get(Constants.TEMPLATE))
+                    .orElse(null);
+            VelocityEngine velocityEngine = new VelocityEngine();
+            velocityEngine.init();
+            VelocityContext context = new VelocityContext();
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                context.put(entry.getKey(), entry.getValue());
+            }
+            StringWriter writer = new StringWriter();
+            velocityEngine.evaluate(context, writer, "HTMLTemplate", htmlTemplate);
+            replacedHTML = writer.toString();
+        } catch (Exception e) {
+            logger.error(requestContext, "Unable to create template ", e);
+        }
+        return replacedHTML;
+    }
 }
