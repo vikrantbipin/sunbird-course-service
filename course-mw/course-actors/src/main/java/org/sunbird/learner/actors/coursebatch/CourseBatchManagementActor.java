@@ -1057,7 +1057,7 @@ public class CourseBatchManagementActor extends BaseActor {
 
             Map<String, Object> message = new HashMap<>();
             Map<String, Object> data = new HashMap<>();
-            data.put(JsonKey.COURSE_ID, courseId);
+            data.put(JsonKey.ID, courseId);
             message.put(JsonKey.DATA, data);
             message.put(JsonKey.PLACE_HOLDERS, params);
 
