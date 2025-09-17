@@ -167,7 +167,6 @@ public class CourseBatchNotificationActor extends BaseActor {
       String recentLanguage) throws Exception {
     Map<String, Object> courseBatchObject = JsonUtil.convert(courseBatch, Map.class);
 
-    logger.info(null,"Course Batch Details in email Request: " + courseBatchObject + ": contentDetails: " + contentDetails);
     Map<String, Object> request = new HashMap<>();
     Map<String, Object> requestMap = new HashMap<String, Object>();
     List<?> languageList = (List<?>) contentDetails.get(JsonKey.LANGUAGE);
