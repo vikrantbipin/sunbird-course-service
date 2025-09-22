@@ -12,7 +12,9 @@ import org.sunbird.common.models.util.PropertiesCache;
 import org.sunbird.cassandra.CassandraOperation;
 import org.sunbird.helper.ServiceFactory;
 
+import java.text.SimpleDateFormat;
 import java.time.Duration;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +78,11 @@ public class BatchCacheHandlerV2 {
                     @SuppressWarnings("unchecked")
                     Map<String, Object> fetchedContent = (Map<String, Object>) responseList.get(0);
                     if (fetchedContent != null && !fetchedContent.isEmpty()) {
+                        if (fetchedContent.containsKey(JsonKey.START_DATE) && fetchedContent.get(JsonKey.START_DATE) instanceof Date) {
+                            Date startDate = (Date) fetchedContent.get(JsonKey.START_DATE);
+                            String formattedStartDate = new SimpleDateFormat("yyyy-MM-dd").format(startDate);
+                            fetchedContent.put(JsonKey.START_DATE, formattedStartDate);
+                        }
                         batchCache.put(batchId, fetchedContent);
                         return fetchedContent;
                     } else {
