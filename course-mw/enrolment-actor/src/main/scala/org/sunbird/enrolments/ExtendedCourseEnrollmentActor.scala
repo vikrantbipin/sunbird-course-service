@@ -487,23 +487,18 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
 
     if (CollectionUtils.isNotEmpty(enrolments)) {
       enrolments = enrolments.filter(e => e.getOrDefault(JsonKey.ACTIVE, false.asInstanceOf[AnyRef]).asInstanceOf[Boolean]).toList.asJava
-      if (status != null && status.nonEmpty && status.exists(s => statusMap.contains(s))) {
-        for (statusValue <- status) {
-          if (statusMap.get(statusValue).contains(1)) {
-            statusFilteredEnrolments.append(
-              enrolments
-                .filter(e => e.getOrDefault(JsonKey.STATUS, (-1).asInstanceOf[AnyRef]).asInstanceOf[Integer] != 2)
-                .toList
-                .asJava
-            )
-          } else {
-            statusFilteredEnrolments.append(
-              enrolments
-                .filter(e => e.getOrDefault(JsonKey.STATUS, (-1).asInstanceOf[AnyRef]).asInstanceOf[Integer] == 2)
-                .toList
-                .asJava
-            )
-          }
+      // Map status strings to their integer values, ignoring unknown statuses
+      if (status != null && status.nonEmpty) {
+        val statusValues: Set[Int] = status.flatMap(s => statusMap.get(s)).toSet
+        if (statusValues.nonEmpty) {
+          enrolments = enrolments
+            .filter { e =>
+              val enrolStatus = e.getOrDefault(JsonKey.STATUS, (-1).asInstanceOf[AnyRef]).asInstanceOf[Int]
+              if (statusValues.contains(1)) enrolStatus != 2
+              else statusValues.contains(enrolStatus)
+            }
+            .toList
+            .asJava
         }
       }
 
