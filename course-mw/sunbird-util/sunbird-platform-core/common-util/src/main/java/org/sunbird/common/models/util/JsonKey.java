@@ -1280,7 +1280,7 @@ public final class JsonKey {
   public static final String PERSONAL_DETAILS = "personalDetails";
   public static final String DELETED_BATCH = "DELETED_BATCH";
   public static final String CONTENT_READ_REQUIRED_FIELDS = "content_read_required_fields";
-
+  public static final String INSTRUCTORS_USER_ID = "instructorsUserId";
   public static final String BATCH_ATTRIBUTES = "batchAttributes";
 
   private JsonKey() {}
