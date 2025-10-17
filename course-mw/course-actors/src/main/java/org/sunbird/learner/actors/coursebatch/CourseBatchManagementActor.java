@@ -40,6 +40,7 @@ import org.sunbird.learner.actors.coursebatch.dao.impl.BatchUserDaoImpl;
 import org.sunbird.learner.actors.coursebatch.dao.impl.CourseBatchDaoImpl;
 import org.sunbird.learner.actors.coursebatch.dao.impl.UserCoursesDaoImpl;
 import org.sunbird.learner.actors.coursebatch.service.UserCoursesService;
+import org.sunbird.learner.actors.user.dao.impl.UserDaoImpl;
 import org.sunbird.learner.constants.CourseJsonKey;
 import org.sunbird.learner.util.*;
 import org.sunbird.models.batch.user.BatchUser;
@@ -79,6 +80,7 @@ public class CourseBatchManagementActor extends BaseActor {
   private UserCoursesDao userCoursesDao = new UserCoursesDaoImpl();
   private CassandraOperation cassandraOperation = ServiceFactory.getInstance();
   private HelperMethodService helperMethodService = new HelperMethodService();
+  private UserDaoImpl userDao = new UserDaoImpl();
 
   @Inject
   @Named("course-batch-notification-actor")
@@ -140,6 +142,10 @@ public class CourseBatchManagementActor extends BaseActor {
     validateContentOrg(actorMessage.getRequestContext(), courseBatch.getCreatedFor());
     validateMentors(courseBatch, (String) actorMessage.getContext().getOrDefault(JsonKey.X_AUTH_TOKEN, ""), actorMessage.getRequestContext());
     courseBatch.setBatchId(courseBatchId);
+    Map<String, Object> batchAttributes = courseBatch.getBatchAttributes();
+    if (MapUtils.isNotEmpty(batchAttributes)) {
+        processInstructors(actorMessage.getRequestContext(), batchAttributes, courseBatch, false);
+    }
     String primaryCategory = (String) contentDetails.getOrDefault(JsonKey.PRIMARYCATEGORY, "");
     if (JsonKey.PRIMARY_CATEGORY_BLENDED_PROGRAM.equalsIgnoreCase(primaryCategory)) {
       if (MapUtils.isEmpty(courseBatch.getBatchAttributes()) || 
@@ -308,9 +314,12 @@ public class CourseBatchManagementActor extends BaseActor {
     if (request.containsKey(JsonKey.MENTORS))
       courseBatch.setMentors((List<String>) request.get(JsonKey.MENTORS));
 
-    if (request.containsKey(CourseJsonKey.BATCH_ATTRIBUTES))
-      courseBatch.setBatchAttributes((Map<String, Object>) request.get(CourseJsonKey.BATCH_ATTRIBUTES));
-
+    Object batchAttrObj = request.get(CourseJsonKey.BATCH_ATTRIBUTES);
+    if (batchAttrObj instanceof Map && MapUtils.isNotEmpty((Map<?, ?>) batchAttrObj)) {
+          Map<String, Object> batchAttributes = (Map<String, Object>) batchAttrObj;
+          courseBatch.setBatchAttributes(batchAttributes);
+          processInstructors(requestContext, batchAttributes, courseBatch, true);
+      }
     updateCourseBatchDate(requestContext, courseBatch, request,isPrivateCall);
 
     return courseBatch;
@@ -1096,4 +1105,82 @@ public class CourseBatchManagementActor extends BaseActor {
         }
         return replacedHTML;
     }
+
+    @SuppressWarnings("unchecked")
+    private void processInstructors(RequestContext requestContext,
+                                    Map<String, Object> batchAttributes,
+                                    CourseBatch courseBatch,
+                                    boolean isUpdateFlow) {
+        if (MapUtils.isEmpty(batchAttributes) || !(batchAttributes.get(JsonKey.INSTRUCTORS_USER_ID) instanceof List)) {
+            return;
+        }
+        List<?> instructors = (List<?>) batchAttributes.get(JsonKey.INSTRUCTORS_USER_ID);
+        if (instructors.isEmpty()) {
+            return;
+        }
+        Set<String> uniqueInstructorIds = instructors.stream()
+                .filter(String.class::isInstance)
+                .map(String.class::cast)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
+
+        if (isUpdateFlow && MapUtils.isNotEmpty(courseBatch.getBatchAttributes())) {
+            Object existingIdsObj = courseBatch.getBatchAttributes().get(JsonKey.INSTRUCTORS_USER_ID);
+            if (existingIdsObj instanceof List) {
+                List<String> existingIds = ((List<?>) existingIdsObj).stream()
+                        .filter(String.class::isInstance)
+                        .map(String.class::cast)
+                        .collect(Collectors.toList());
+
+                // Remove existing instructor IDs from new list
+                existingIds.forEach(uniqueInstructorIds::remove);
+            }
+        }
+
+        if (isUpdateFlow && courseBatch.getStartDate() != null && !new Date().before(courseBatch.getStartDate())) {
+            throw new ProjectCommonException(
+                    ResponseCode.invalidParameterValue.getErrorCode(),
+                    "Instructors cannot be added/updated after the batch start date: "
+                            + courseBatch.getStartDate(),
+                    ResponseCode.CLIENT_ERROR.getResponseCode()
+            );
+        }
+        List<String> validUserIds = new ArrayList<>();
+        for (String instructorUserId : uniqueInstructorIds) {
+            userExists(instructorUserId, requestContext);
+            validUserIds.add(instructorUserId);
+        }
+        if (!validUserIds.isEmpty()) {
+            batchAttributes.put(JsonKey.INSTRUCTORS_USER_ID, validUserIds);
+        } else {
+            batchAttributes.remove(JsonKey.INSTRUCTORS_USER_ID);
+        }
+    }
+
+    private void userExists(String instructorUserId, RequestContext requestContext) {
+        Response response = userDao.read(instructorUserId, requestContext);
+
+        boolean isInvalid = (response == null)
+                || (response.getResponseCode() != ResponseCode.OK)
+                || MapUtils.isEmpty(response.getResult())
+                || isEmptyUserResponse(response.getResult());
+
+        if (isInvalid) {
+            throw new ProjectCommonException(
+                    ResponseCode.invalidParameterValue.getErrorCode(),
+                    "InstructorUserId " + instructorUserId + " not found",
+                    ResponseCode.CLIENT_ERROR.getResponseCode()
+            );
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean isEmptyUserResponse(Map<String, Object> result) {
+        Object res = result.get("response");
+        if (res instanceof List) {
+            List<?> responseList = (List<?>) res;
+            return responseList.isEmpty() || responseList.size() == 0;
+        }
+        return true;
+    }
+
 }
