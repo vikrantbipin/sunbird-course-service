@@ -71,13 +71,7 @@ public final class ContentUtil {
           baseSearchUrl
               + PropertiesCache.getInstance().getProperty(JsonKey.EKSTEP_CONTENT_SEARCH_URL),
           params,
-          headers);
-      logger.info(null, "Content search response", null, new HashMap<>() {
-        {
-          put("response", response);
-        }
-      });
-      logger.info(null, "Content search response got from search query: " + mapper.writeValueAsString(response));
+          headers);      
       Map<String, Object> data = mapper.readValue(response, Map.class);
       if (MapUtils.isNotEmpty(data)) {
         String resmsgId = (String) ((Map<String, Object>) data.get("params")).get("resmsgid");

@@ -116,7 +116,7 @@ public class HelperMethodService {
             filteredUserIdList = filteredUserIdList.stream()
                     .filter(user -> !user.equalsIgnoreCase(userId))
                     .collect(Collectors.toList());
-            triggerNotification(JsonKey.EVENT_ENROLLED, JsonKey.ALERT, filteredUserIdList, firstName,
+            triggerNotification(JsonKey.EVENT_ENROLLED, JsonKey.UPDATE_KEY, filteredUserIdList, firstName,
                     eventDetails.get(JsonKey.NAME).toString(), eventDetails.get(JsonKey.START_DATE).toString(), notificationData, requestContext);
         } else {
             logger.info(requestContext, "No MDO leaders found for event: " + eventId);

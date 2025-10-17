@@ -1269,6 +1269,7 @@ public final class JsonKey {
   public static final String MDO_ADMIN = "MDO_ADMIN";
   public static final String ORGANISATIONS_ROLES = "organisations.roles";
   public static final String EVENT_ENROLLED = "EVENT_ENROLLED";
+  public static final String UPDATE_KEY = "UPDATE";
   public static final String ALERT = "ALERT";
   public static final String RECORDS = "records";
   public static final String CONTENT_READ = "content_read";
@@ -1280,7 +1281,7 @@ public final class JsonKey {
   public static final String DELETED_BATCH = "DELETED_BATCH";
   public static final String CONTENT_READ_REQUIRED_FIELDS = "content_read_required_fields";
   public static final String INSTRUCTORS_USER_ID = "instructorsUserId";
-
+  public static final String BATCH_ATTRIBUTES = "batchAttributes";
 
   private JsonKey() {}
 }
