@@ -49,7 +49,7 @@ public class CourseBatchNotificationActor extends BaseActor {
   private BatchUserDao batchUserDao = new BatchUserDaoImpl();
   private ObjectMapper mapper = new ObjectMapper();
   private static final DateTimeFormatter DATE_FMT =
-          DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX").withZone(ZoneId.systemDefault());
+          DateTimeFormatter.ofPattern(Constants.DATE_FORMAT_FOR_NOTIFICATION).withZone(ZoneId.systemDefault());
 
   @Override
   public void onReceive(Request request) throws Throwable {
@@ -350,7 +350,6 @@ public class CourseBatchNotificationActor extends BaseActor {
         } else if (epochObj instanceof java.util.Date) {
             millis = ((java.util.Date) epochObj).getTime();
         } else {
-            // if already a string or unknown type, return its toString()
             return epochObj.toString();
         }
         return DATE_FMT.format(Instant.ofEpochMilli(millis));
