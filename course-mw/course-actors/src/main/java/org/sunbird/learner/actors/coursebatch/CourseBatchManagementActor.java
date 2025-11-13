@@ -265,7 +265,7 @@ public class CourseBatchManagementActor extends BaseActor {
       batchOperationNotifier(actorMessage, courseBatch, participantsMap);
     }
     if (batchDatesUpdateNotificationActive()) {
-        batchDatesUpdateNotifier(actorMessage, courseBatch, oldBatch, contentDetails);
+        batchDatesUpdateNotifier(actorMessage, courseBatch, oldBatch, (String) contentDetails.get(JsonKey.NAME));
     }
       notifyInstructors(actorMessage.getRequestContext(), courseBatch, courseBatch.getBatchAttributes(), courseBatch.getCourseId(), batchId, oldBatch);
   }
@@ -856,14 +856,14 @@ public class CourseBatchManagementActor extends BaseActor {
       return false;
     }
   }
-  private void batchDatesUpdateNotifier(Request actorMessage, CourseBatch updatedCourseBatch, CourseBatch oldCourseBatch,Map<String, Object> contentDetails) {
+  private void batchDatesUpdateNotifier(Request actorMessage, CourseBatch updatedCourseBatch, CourseBatch oldCourseBatch, String courseName) {
     Request batchNotification = new Request(actorMessage.getRequestContext());
     batchNotification.getContext().putAll(actorMessage.getContext());
     batchNotification.setOperation(ActorOperations.COURSE_BATCH_DATE_NOTIFICATION.getValue());
     Map<String, Object> request = new HashMap<>();
     request.put(Constants.OLD_COURSE_BATCH, oldCourseBatch);
     request.put(Constants.UPDATED_COURSE_BATCH, updatedCourseBatch);
-    request.put(Constants.COURSE_NAME, contentDetails.get(JsonKey.NAME));
+    request.put(Constants.COURSE_NAME, courseName);
     request.put(Constants.REQUEST_CONTEXT, actorMessage.getRequestContext());
     request.put(Constants.REQUEST_BODY, actorMessage.getRequest());
     batchNotification.setRequest(request);

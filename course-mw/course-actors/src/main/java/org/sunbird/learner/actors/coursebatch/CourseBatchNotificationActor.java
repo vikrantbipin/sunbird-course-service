@@ -49,7 +49,7 @@ public class CourseBatchNotificationActor extends BaseActor {
   private BatchUserDao batchUserDao = new BatchUserDaoImpl();
   private ObjectMapper mapper = new ObjectMapper();
   private static final DateTimeFormatter DATE_FMT =
-          DateTimeFormatter.ofPattern(Constants.DATE_FORMAT_FOR_NOTIFICATION).withZone(ZoneId.systemDefault());
+          DateTimeFormatter.ofPattern(Constants.DATE_FORMAT).withZone(ZoneId.systemDefault());
 
   @Override
   public void onReceive(Request request) throws Throwable {
