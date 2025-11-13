@@ -1,6 +1,7 @@
 package org.sunbird.learner.actors.coursebatch;
 
 import akka.actor.ActorRef;
+import jodd.util.StringUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -265,7 +266,8 @@ public class CourseBatchManagementActor extends BaseActor {
       batchOperationNotifier(actorMessage, courseBatch, participantsMap);
     }
     if (batchDatesUpdateNotificationActive()) {
-        batchDatesUpdateNotifier(actorMessage, courseBatch, oldBatch, (String) contentDetails.get(JsonKey.NAME));
+        String courseName = StringUtils.defaultIfBlank((String) contentDetails.get(JsonKey.NAME), "");
+        batchDatesUpdateNotifier(actorMessage, courseBatch, oldBatch, courseName);
     }
       notifyInstructors(actorMessage.getRequestContext(), courseBatch, courseBatch.getBatchAttributes(), courseBatch.getCourseId(), batchId, oldBatch);
   }
