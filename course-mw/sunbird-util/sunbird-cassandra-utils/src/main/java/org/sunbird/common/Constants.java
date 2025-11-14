@@ -112,5 +112,4 @@ public interface Constants {
   public static final String INSTRUCTOR_ADD_BATCH_NOTIFY_TEMPLATE = "instructorAddBatchNotify";
   public static final String PROGRAM_NAME = "programName";
   public static final String INSTRUCTOR_ADD_BATCH_MAIL_SUBJECT = "You have been added as an Instructor to a blended program";
-  public static final String DATE_FORMAT_FOR_NOTIFICATION = "yyyy-MM-dd HH:mm:ss.SSS";
 }
