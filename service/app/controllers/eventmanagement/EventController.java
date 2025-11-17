@@ -116,7 +116,11 @@ public class EventController extends BaseController {
                 httpRequest);
     }
 
-    public CompletionStage<Result> getEnrolledEvent(String uid, Http.Request httpRequest, boolean isPrivate=false) {
+    public CompletionStage<Result> getEnrolledEvent(String uid, Http.Request httpRequest) {
+        return getEnrolledEvent(uid, httpRequest, false);
+    }
+
+    public CompletionStage<Result> getEnrolledEvent(String uid, Http.Request httpRequest, boolean isPrivate) {
         return handleRequest(actorRef, "getEnrol",
                 httpRequest.body().asJson(),
                 (req) -> {
@@ -137,7 +141,7 @@ public class EventController extends BaseController {
                     }
                     validator.validateRequestedBy(userId);
                     if(!userId.equalsIgnoreCase(uid)){
-                        ProjectLogger.log("UserId in path and auth token are not same", LoggerEnum.INFO.name());
+                        ProjectLogger.log("UserId in path and auth token booleanare not same", LoggerEnum.INFO.name());
                         throw new ProjectCommonException(ResponseCode.unAuthorized.getErrorCode(),
                                 ResponseCode.unAuthorized.getErrorMessage(),
                                 ResponseCode.UNAUTHORIZED.getResponseCode());
