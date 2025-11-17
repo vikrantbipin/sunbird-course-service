@@ -171,11 +171,12 @@ public class CourseBatchManagementActor extends BaseActor {
     TelemetryUtil.telemetryProcessingCall(request, targetObject, correlatedObject, actorMessage.getContext());
 
   //  updateBatchCount(courseBatch);
+      String courseName = StringUtils.defaultIfBlank((String) contentDetails.get(JsonKey.NAME), "");
       updateCollection(actorMessage.getRequestContext(), esCourseMap, contentDetails);
     if (courseNotificationActive()) {
       batchOperationNotifier(actorMessage, courseBatch, null);
     }
-    notifyInstructors(actorMessage.getRequestContext(), courseBatch, batchAttributes, courseId, courseBatchId, null);
+    notifyInstructors(actorMessage.getRequestContext(), courseBatch, batchAttributes, courseId, courseBatchId, null, courseName);
   }
 
   private boolean courseNotificationActive() {
@@ -265,11 +266,11 @@ public class CourseBatchManagementActor extends BaseActor {
     if (courseNotificationActive()) {
       batchOperationNotifier(actorMessage, courseBatch, participantsMap);
     }
+      String courseName = StringUtils.defaultIfBlank((String) contentDetails.get(JsonKey.NAME), "");
     if (batchDatesUpdateNotificationActive()) {
-        String courseName = StringUtils.defaultIfBlank((String) contentDetails.get(JsonKey.NAME), "");
         batchDatesUpdateNotifier(actorMessage, courseBatch, oldBatch, courseName);
     }
-      notifyInstructors(actorMessage.getRequestContext(), courseBatch, courseBatch.getBatchAttributes(), courseBatch.getCourseId(), batchId, oldBatch);
+      notifyInstructors(actorMessage.getRequestContext(), courseBatch, courseBatch.getBatchAttributes(), courseBatch.getCourseId(), batchId, oldBatch, courseName);
   }
 
   private Map<String, Object> getMentorLists(
@@ -1150,7 +1151,8 @@ public class CourseBatchManagementActor extends BaseActor {
                                    Map<String, Object> batchAttributes,
                                    String courseId,
                                    String batchId,
-                                   CourseBatch oldBatch) {
+                                   CourseBatch oldBatch,
+                                   String courseName) {
         if (MapUtils.isEmpty(batchAttributes)) {
             logger.info(requestContext, "No batch attributes for instructors");
             return;
@@ -1224,9 +1226,8 @@ public class CourseBatchManagementActor extends BaseActor {
             return;
         }
 
-        String programName = courseBatch.getName();
         Map<String, Object> placeHolders = new HashMap<>();
-        placeHolders.put(JsonKey.PROGRAM_NAME, programName);
+        placeHolders.put(JsonKey.PROGRAM_NAME, courseName);
 
         Map<String, Object> data = new HashMap<>();
         data.put(JsonKey.ID, courseId);
@@ -1246,7 +1247,7 @@ public class CourseBatchManagementActor extends BaseActor {
 
             Map<String, Object> params = new HashMap<>();
             params.put(JsonKey.FIRST_NAME, firstName);
-            params.put(Constants.PROGRAM_NAME, programName);
+            params.put(Constants.PROGRAM_NAME, courseName);
 
             sendNotificationCommon(
                     requestContext,
