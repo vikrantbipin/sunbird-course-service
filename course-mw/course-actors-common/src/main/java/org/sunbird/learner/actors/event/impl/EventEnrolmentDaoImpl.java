@@ -203,15 +203,21 @@ public class EventEnrolmentDaoImpl implements EventEnrolmentDao {
             if (cacheResponse != null && !cacheResponse.trim().isEmpty() && !cacheResponse.trim().equals("{}")) {
                 logger.info(requestContext, "EventEnrolmentDaoImpl:getContentDetails: Data reading from cache ", null,
                         null);
-                return mapper.readValue(cacheResponse, new TypeReference<Map<String, Object>>() {});
-            }else{
+                Map<String, Object> redisResponse = mapper.readValue(cacheResponse, new TypeReference<Map<String, Object>>() {});
+                // check if redisResponse contains keys endDate, endTime, startDate, startTime
+                if (redisResponse.containsKey("contentType") && redisResponse.get("contentType").toString().equalsIgnoreCase("event") &&
+                        redisResponse.containsKey("endDate") && redisResponse.containsKey("endTime")
+                        && redisResponse.containsKey("startDate") && redisResponse.containsKey("startTime"))
+                    return redisResponse;
+            }
+
             Map<String, Object> ekStepContent = ContentUtil.getContent(eventId);
             logger.debug(requestContext, "EventEnrolmentDaoImpl:getContentDetails: courseId: " + eventId, null,
                     ekStepContent);
             response = (Map<String, Object>) ekStepContent.getOrDefault("content", new HashMap<>());
                 redisCacheUtil.set(key, mapper.writeValueAsString(response), ttl);
             return response;
-            }
+            
         } catch (Exception e) {
             logger.error(requestContext, "Error found during event read api " + e.getMessage(), e);
         }
