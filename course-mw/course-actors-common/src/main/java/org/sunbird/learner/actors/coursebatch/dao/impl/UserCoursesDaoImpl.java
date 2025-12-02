@@ -205,20 +205,22 @@ public class UserCoursesDaoImpl implements UserCoursesDao {
     int currentOffSet = 1;
     String currentPagingState = null;
     long count = 0L;
-    Response countResponse = cassandraOperation.getCountOfRecordByIdentifier(requestContext, KEYSPACE_NAME,
-            ENROLMENT_BATCH_LOOKUP, queryMap, JsonKey.USER_ID);
-    if (countResponse != null
-            && countResponse.getResult() != null
-            && countResponse.getResult().get(JsonKey.RESPONSE) instanceof List) {
+    long activeCount = 0L;
+    Response res = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
+            requestContext,
+            KEYSPACE_NAME,
+            ENROLMENT_BATCH_LOOKUP,
+            JsonKey.BATCH_ID,
+            request.get(JsonKey.BATCH_ID),
+            Arrays.asList(JsonKey.USER_ID, JsonKey.ACTIVE)
+    );
+    List<Map<String, Object>> batchUsers =
+            (List<Map<String, Object>>) res.get(JsonKey.RESPONSE);
 
-      List<Map<String, Object>> responseList = (List<Map<String, Object>>) countResponse.getResult().get(JsonKey.RESPONSE);
-
-      if (!responseList.isEmpty()) {
-        Object countObj = responseList.get(0).get(JsonKey.USERS_COUNT);
-        if (countObj instanceof Number) {
-          count = ((Number) countObj).longValue();
-        }
-      }
+    if (CollectionUtils.isNotEmpty(batchUsers)) {
+        activeCount = batchUsers.stream()
+                .filter(row -> Boolean.TRUE.equals(row.get(JsonKey.ACTIVE)))
+                .count();
     }
     logger.info(requestContext, "Total enrolment in the batch : " + (String) request.get(JsonKey.BATCH_ID) + " is: " + count);
     do {
@@ -266,7 +268,7 @@ public class UserCoursesDaoImpl implements UserCoursesDao {
     }
     result.put(JsonKey.CURRENT_OFFSET, (Integer) request.get(JsonKey.CURRENT_OFFSET));
     //Only active users will be returned.
-    result.put(JsonKey.COUNT, count);
+    result.put(JsonKey.COUNT, activeCount);
     result.put(JsonKey.PARTICIPANTS, userList);
     return result;
   }

@@ -89,7 +89,7 @@ public class EventController extends BaseController {
 
         Map<String, String[]> queryParams = new HashMap<>(httpRequest.queryString());
         if (queryParams.containsKey(JsonKey.EVENT_ID) && queryParams.containsKey(JsonKey.BATCH_ID)) {
-            return getEnrolledEvent(uid, httpRequest);
+            return getEnrolledEvent(uid, httpRequest, true);
         }
         return getEnrolledEventsList(uid, httpRequest, true);
     }
@@ -117,6 +117,10 @@ public class EventController extends BaseController {
     }
 
     public CompletionStage<Result> getEnrolledEvent(String uid, Http.Request httpRequest) {
+        return getEnrolledEvent(uid, httpRequest, false);
+    }
+
+    public CompletionStage<Result> getEnrolledEvent(String uid, Http.Request httpRequest, boolean isPrivate) {
         return handleRequest(actorRef, "getEnrol",
                 httpRequest.body().asJson(),
                 (req) -> {
@@ -132,9 +136,12 @@ public class EventController extends BaseController {
                         request.put(JsonKey.BATCH_ID, batchId);
                     }
                     String userId = (String) request.getContext().getOrDefault(JsonKey.REQUESTED_FOR, request.getContext().get(JsonKey.REQUESTED_BY));
+                    if (isPrivate) {
+                        userId = uid;
+                    }
                     validator.validateRequestedBy(userId);
                     if(!userId.equalsIgnoreCase(uid)){
-                        ProjectLogger.log("UserId in path and auth token are not same", LoggerEnum.INFO.name());
+                        ProjectLogger.log("UserId in path and auth token booleanare not same", LoggerEnum.INFO.name());
                         throw new ProjectCommonException(ResponseCode.unAuthorized.getErrorCode(),
                                 ResponseCode.unAuthorized.getErrorMessage(),
                                 ResponseCode.UNAUTHORIZED.getResponseCode());
