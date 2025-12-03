@@ -19,13 +19,16 @@ class RedisCacheUtil {
 
     implicit val className = "org.sunbird.cache.connector.RedisConnector"
 
-    private val redis_host = Platform.getString("sunbird_redis_host", "localhost")
-    private val redis_port = Platform.getInteger("sunbird_redis_port", 6379)
-    private val index = Platform.getInteger("redis.dbIndex", 0)
+    private val redis_host: String = Platform.getString("sunbird_redis_host", "localhost")
+    private val redis_port: Int = Platform.getInteger("sunbird_redis_port", 6379)
+    private val index: Int = Platform.getInteger("redis.dbIndex", 0)
+    private val redis_timeout: Int = Platform.getInteger("redis.connection.timeout", 10000) // 10 seconds default (used for both connection and socket timeout)
+    private val redis_password: String = Platform.getString("sunbird_redis_password", null)
 
      println("=====redis_host=====" + redis_host)
     println("=====redis index=====" + index)
     println("=====redis port=====" + redis_port)
+    println("=====redis timeout=====" + redis_timeout)
     private def buildPoolConfig = {
         val poolConfig = new JedisPoolConfig
         poolConfig.setMaxTotal(Platform.getInteger("redis.connection.max", 2))
@@ -38,7 +41,7 @@ class RedisCacheUtil {
         poolConfig
     }
 
-    protected var jedisPool: JedisPool = new JedisPool(buildPoolConfig, redis_host, redis_port)
+    protected var jedisPool: JedisPool = new JedisPool(buildPoolConfig, redis_host, redis_port, redis_timeout, redis_password, index)
 
     def getConnection(database: Int): Jedis = {
         val conn = jedisPool.getResource
@@ -69,7 +72,7 @@ class RedisCacheUtil {
 
     def resetConnection(): Unit = {
         jedisPool.close()
-        jedisPool = new JedisPool(buildPoolConfig, redis_host, redis_port)
+        jedisPool = new JedisPool(buildPoolConfig, redis_host, redis_port, redis_timeout, redis_password, index)
     }
 
     def closePool() = {
