@@ -153,6 +153,12 @@ public class CourseEnrollmentRequestValidator extends BaseRequestValidator {
             JsonKey.COURSE_ID);
   }
 
+  /** validateEnrolmentCriteria handles ID extraction/validation
+   * @param requestDto
+   * @param isCourse
+   * @param isBlendedProgram
+   */
+
   public void validateEnrolmentCriteria(Request requestDto, boolean isCourse, boolean isBlendedProgram) {
     // Get the courseId from the request
     String courseId = "";
@@ -173,7 +179,17 @@ public class CourseEnrollmentRequestValidator extends BaseRequestValidator {
             ResponseCode.CLIENT_ERROR.getResponseCode());
       }
     }
-    
+    validateAccessSettingsDetails(requestDto, courseId, isCourse, isBlendedProgram);
+  }
+
+  /** validateAccessSettingsDetails contains reusable main logic supports other than courseId/programId to validate access settings.
+   * @param requestDto
+   * @param courseId
+   * @param isCourse
+   * @param isBlendedProgram
+   */
+  public void validateAccessSettingsDetails(Request requestDto, String courseId, boolean isCourse, boolean isBlendedProgram) {
+
     // Get the course details from ContentCahceHandlerV2
     Map<String, Object> courseDetails = null;
     try {
