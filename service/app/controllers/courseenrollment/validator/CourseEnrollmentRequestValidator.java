@@ -173,7 +173,11 @@ public class CourseEnrollmentRequestValidator extends BaseRequestValidator {
             ResponseCode.CLIENT_ERROR.getResponseCode());
       }
     }
-    
+    validateAccessSettingsDetails(requestDto, courseId, isCourse, isBlendedProgram);
+  }
+
+  public void validateAccessSettingsDetails(Request requestDto, String courseId, boolean isCourse, boolean isBlendedProgram) {
+
     // Get the course details from ContentCahceHandlerV2
     Map<String, Object> courseDetails = null;
     try {
