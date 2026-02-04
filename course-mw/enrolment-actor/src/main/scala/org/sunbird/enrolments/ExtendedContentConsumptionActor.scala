@@ -335,7 +335,7 @@ class ExtendedContentConsumptionActor @Inject() extends BaseEnrolmentActor {
         )
         val formattedMap = JsonUtil.convertWithDateFormat(m, classOf[util.Map[String, Object]], dateFormatter)
         if (fields.contains(JsonKey.ASSESSMENT_SCORE))
-          formattedMap.putAll(mapAsJavaMap(Map(JsonKey.ASSESSMENT_SCORE -> getScore(userId, courseId, m.get("contentId").asInstanceOf[String], batchId, request.getRequestContext))))
+          formattedMap.putAll(scala.collection.JavaConverters.mapAsJavaMap(Map(JsonKey.ASSESSMENT_SCORE -> getScore(userId, courseId, m.get("contentId").asInstanceOf[String], batchId, request.getRequestContext))))
         formattedMap
       }).asJava
       response.put(JsonKey.RESPONSE, filteredContents)

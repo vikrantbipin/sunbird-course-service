@@ -1266,7 +1266,7 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
         }
         val formattedMap = JsonUtil.convertWithDateFormat(resultMap, classOf[util.Map[String, Object]], dateFormatter)
         if (fields.contains(JsonKey.ASSESSMENT_SCORE))
-          formattedMap.putAll(mapAsJavaMap(Map(JsonKey.ASSESSMENT_SCORE -> getScore(userId, courseId, m.get(Constants.CONTENT_ID).asInstanceOf[String], batchId, request.getRequestContext))))
+          formattedMap.putAll(scala.collection.JavaConverters.mapAsJavaMap(Map(JsonKey.ASSESSMENT_SCORE -> getScore(userId, courseId, m.get(Constants.CONTENT_ID).asInstanceOf[String], batchId, request.getRequestContext))))
         formattedMap
       }.asJava
       enrolment.put("contentList", filteredContents)

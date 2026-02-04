@@ -153,7 +153,7 @@
   <dependencies>
     <dependency>
       <groupId>com.typesafe.play</groupId>
-      <artifactId>play-specs2_2.11</artifactId>
+      <artifactId>play-specs2_2.12</artifactId>
       <version>2.4.6</version>
       <scope>test</scope>
       <exclusions>
@@ -162,19 +162,19 @@
           <groupId>com.google.code.gson</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>play-test_2.11</artifactId>
+          <artifactId>play-test_2.12</artifactId>
           <groupId>com.typesafe.play</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>specs2-core_2.11</artifactId>
+          <artifactId>specs2-core_2.12</artifactId>
           <groupId>org.specs2</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>specs2-junit_2.11</artifactId>
+          <artifactId>specs2-junit_2.12</artifactId>
           <groupId>org.specs2</groupId>
         </exclusion>
         <exclusion>
-          <artifactId>specs2-mock_2.11</artifactId>
+          <artifactId>specs2-mock_2.12</artifactId>
           <groupId>org.specs2</groupId>
         </exclusion>
       </exclusions>
@@ -225,7 +225,7 @@
     </dependency>
   </dependencies>
   <properties>
-    <scala.version>2.11.8</scala.version>
+    <scala.version>2.12.21</scala.version>
     <play2.plugin.version>1.0.0-beta5</play2.plugin.version>
     <play2.version>2.4.6</play2.version>
   </properties>
