@@ -595,8 +595,8 @@ public class CourseEnrollmentRequestValidator extends BaseRequestValidator {
               ResponseCode.CLIENT_ERROR.getResponseCode());
     }
     validateParam(
-            (String) batchMap.get(JsonKey.EVENT_ID),
+            (String) batchMap.get(JsonKey.BATCH_ID),
             ResponseCode.mandatoryParamsMissing,
-            JsonKey.EVENT_ID);
+            JsonKey.BATCH_ID);
   }
 }

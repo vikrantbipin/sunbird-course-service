@@ -480,7 +480,7 @@ public class UserCoursesDaoImpl implements UserCoursesDao {
             KEYSPACE_NAME,
             EXTERNAL_TRAINING_ENROLMENT_BATCH_LOOKUP,
             JsonKey.BATCH_ID,
-            request.get(JsonKey.EVENT_ID),
+            request.get(JsonKey.BATCH_ID),
             Arrays.asList(JsonKey.USER_ID, JsonKey.ACTIVE)
     );
     List<Map<String, Object>> batchUsers = (List<Map<String, Object>>) res.get(JsonKey.RESPONSE);
@@ -493,7 +493,7 @@ public class UserCoursesDaoImpl implements UserCoursesDao {
   private Map<String, Object> collectExternalTrainingPagedUsers(RequestContext requestContext, Map<String, Object> request,
                                                                  boolean active, int limit, int offsetFromRequest) {
     Map<String, Object> queryMap = new HashMap<>();
-    queryMap.put(JsonKey.BATCH_ID, (String) request.get(JsonKey.EVENT_ID));
+    queryMap.put(JsonKey.BATCH_ID, (String) request.get(JsonKey.BATCH_ID));
 
     List<String> userList = new ArrayList<>();
     String pageId = (String) request.get(JsonKey.PAGE_ID);
