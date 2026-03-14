@@ -63,6 +63,7 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
   private val enrolmentDBInfo = ExtendedUtil.dbInfoMap.get(JsonKey.LEARNER_COURSE_DB)
   private val consumptionDBInfo = ExtendedUtil.dbInfoMap.get(JsonKey.LEARNER_CONTENT_DB)
   private val assessmentAggregatorDBInfo = Util.dbInfoMap.get(JsonKey.ASSESSMENT_AGGREGATOR_DB)
+  private val badgeDbInfo = ExtendedUtil.dbInfoMap.get(ExtendedUtil.USER_BADGE_LOOKUP_DB)
   val dateFormatter = ProjectUtil.getDateFormatter
   private val userCoursesService = new UserCoursesService
 
@@ -340,6 +341,7 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
       val resp: Response = new Response()
       resp.put(JsonKey.USER_COURSE_ENROLMENT_INFO, userCourseEnrolmentInfo)
       resp.put(JsonKey.USER_COURSE_EXTERNAL_ENROLMENT_INFO, externalCourseInfo)
+      resp.put(JsonKey.BADGE_COUNT, getUserBadgeCount(request.getRequestContext,userId).asInstanceOf[AnyRef])
       resp.put(JsonKey.COURSES, updatedEnrolmentList)
       resp.put(JsonKey.EXTERNAL_COURSES, externalEnrolments)
       sender().tell(resp, self)
@@ -371,6 +373,7 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
       val resp: Response = new Response()
       resp.put(JsonKey.USER_COURSE_ENROLMENT_INFO, userCourseEnrolmentInfo)
       resp.put(JsonKey.USER_COURSE_EXTERNAL_ENROLMENT_INFO, externalCourseInfo)
+      resp.put(JsonKey.BADGE_COUNT, getUserBadgeCount(request.getRequestContext,userId).asInstanceOf[AnyRef])
       sender().tell(resp, self)
     } catch {
       case e: Exception =>
@@ -1578,5 +1581,35 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
     val response = new Response
     response.put(JsonKey.BATCH, result)
     sender.tell(response, self)
+  }
+  def getUserBadgeCount(requestContext: RequestContext, userId: String): Int = {
+    val redisKey = JsonKey.USER_BADGE_COUNT_REDIS_KEY + userId
+    try {
+      Option(cacheUtil.get(redisKey))
+        .filter(_.nonEmpty)
+        .flatMap(v => scala.util.Try(v.toInt).toOption)
+        .getOrElse {
+          val badgeResponse = cassandraOperation.getRecordsByPropertiesWithoutFiltering(
+            requestContext,
+            badgeDbInfo.getKeySpace,
+            badgeDbInfo.getTableName,
+            JsonKey.USER_ID,
+            userId,
+            util.Arrays.asList(JsonKey.COURSE_ID)
+          )
+          val badgeRecords = Option(badgeResponse.get(JsonKey.RESPONSE))
+            .collect { case list: java.util.List[_] => list }
+            .getOrElse(java.util.Collections.emptyList())
+
+          val count = badgeRecords.size()
+          val redisCacheTtl = ProjectUtil.getConfigValue(JsonKey.BADGE_CACHE_TTL).toInt
+          cacheUtil.set(redisKey, count.toString, redisCacheTtl)
+          count
+        }
+    } catch {
+      case e: Exception =>
+        logger.warn(null, s"Failed to fetch badge count for userId $userId: ${e.getMessage}", e)
+        -1
+    }
   }
 }
