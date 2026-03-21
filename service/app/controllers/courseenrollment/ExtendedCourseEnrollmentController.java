@@ -264,6 +264,20 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                 httpRequest);
     }
 
+    public CompletionStage<Result> privateGetEnrolledCoursesDetailsWithProgress(String uid, Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "enrolDetailsWithProgress",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    request.getRequest().put(JsonKey.USER_ID, uid);
+                    request.getContext().put(JsonKey.USER_ID, uid);
+                    validator.validateEnrollListRequestDetails(request);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
     public CompletionStage<Result> getParticipantsForExternalTrainingBatch(Http.Request httpRequest) {
         return handleRequest(extendedCourseEnrolmentActor, "getParticipantsForExternalTrainingBatch",
                 httpRequest.body().asJson(),
