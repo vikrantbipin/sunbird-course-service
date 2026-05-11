@@ -378,7 +378,7 @@ class ContentConsumptionActor @Inject() extends BaseEnrolmentActor {
         val topic = ProjectUtil.getConfigValue("kafka_topics_instruction")
         logger.info(requestContext,"LearnerStateUpdateActor: pushInstructionEvent :Event Data " + data + " and Topic " + topic)
         if(pushTokafkaEnabled)
-            InstructionEventGenerator.pushInstructionEvent(userId, topic, data)
+            InstructionEventGenerator.pushInstructionEvent(userId + ":" + courseId, topic, data)
     }
 
     def getConsumption(request: Request): Unit = {
