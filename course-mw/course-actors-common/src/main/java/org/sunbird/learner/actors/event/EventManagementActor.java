@@ -35,6 +35,7 @@ public class EventManagementActor extends BaseActor {
     private EventEnrolmentDao eventBatchDao = new EventEnrolmentDaoImpl();
     private RedisCache redisCache = RedisCache.getInstance();
     private ObjectMapper mapper = new ObjectMapper();
+    private EventEnrolmentDaoImpl eventEnrolmentDao = new EventEnrolmentDaoImpl();
 
 
     @Override
@@ -289,35 +290,41 @@ public class EventManagementActor extends BaseActor {
         int hoursSpentOnEvents = 0;
         Map<String, Object> addInfo = new HashMap<>();
 
-        for (Map<String, Object> eventDetails : finalEnrolment) {
-            Integer eventStatus = (Integer) eventDetails.get(JsonKey.STATUS);
-            boolean isCertificateExist = false;
+        boolean isRetiredCourseIncluded = Boolean.TRUE.equals(request.get(JsonKey.RETIRED_COURE_ENABLED));
 
-            if (eventStatus != null && eventStatus == 2) {
-                List<Map<String, Object>> certificatesIssued = (List<Map<String, Object>>)eventDetails.get(JsonKey.ISSUED_CERTIFICATES);
-                if (CollectionUtils.isNotEmpty(certificatesIssued)) {
-                    isCertificateExist = true;
-                    eventsCompleted++;
-                }
+        for (Map<String, Object> eventDetails : finalEnrolment) {
+
+            boolean isCompleted = Integer.valueOf(2).equals(eventDetails.get(JsonKey.STATUS));
+
+            if (isCompleted) {
+                eventsCompleted++;
                 eventsEnrolled++;
-            } else {
-                eventsEnrolled++;
-            }
-            int hoursSpentOnCourses = 0;
-            String lrcProgressDetails = (String) eventDetails.get(JsonKey.LRC_PROGRESS_DETAILS);
-            try {
-                if (StringUtils.isNotBlank(lrcProgressDetails) && isCertificateExist) {
-                    JsonNode lrcProgressDetailsJson = mapper.readTree(lrcProgressDetails);
-                    if (lrcProgressDetailsJson.hasNonNull(JsonKey.DURATION)) {
-                        String durationValue = lrcProgressDetailsJson.get(JsonKey.DURATION).asText();
-                        int duration = parseDurationValue(durationValue);
-                        hoursSpentOnCourses += duration;
+
+                String lrcProgressDetails = (String) eventDetails.get(JsonKey.LRC_PROGRESS_DETAILS);
+                if (StringUtils.isNotBlank(lrcProgressDetails)) {
+                    try {
+                        JsonNode progressJson = mapper.readTree(lrcProgressDetails);
+                        if (progressJson.hasNonNull(JsonKey.DURATION)) {
+                            hoursSpentOnEvents += parseDurationValue(progressJson.get(JsonKey.DURATION).asText());
+                        }
+                    } catch (Exception e) {
+                        logger.error(request.getRequestContext(), "Error parsing progressDetails JSON", e);
                     }
                 }
-            } catch (Exception e) {
-                logger.error(request.getRequestContext(), "Error parsing progressDetails JSON", e);
+                continue;
             }
-            hoursSpentOnEvents += hoursSpentOnCourses;
+
+            if (isRetiredCourseIncluded) {
+                eventsEnrolled++;
+                continue;
+            }
+
+            String eventId = (String) eventDetails.get(JsonKey.CONTENT_ID);
+            Map<String, Object> eventMetadata = eventEnrolmentDao.getEventDetails(request.getRequestContext(), eventId);
+
+            if (MapUtils.isNotEmpty(eventMetadata) && JsonKey.LIVE.equalsIgnoreCase((String) eventMetadata.get(JsonKey.STATUS))) {
+                eventsEnrolled++;
+            }
         }
 
         addInfo.put(JsonKey.EVENTS_ENROLLED, eventsEnrolled);

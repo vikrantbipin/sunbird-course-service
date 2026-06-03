@@ -260,8 +260,14 @@ public class EventController extends BaseController {
                             .put(JsonKey.BATCH_DETAILS, httpRequest.queryString().get(JsonKey.BATCH_DETAILS));
                     if (queryParams.containsKey("cache")) {
                         request.getContext().put("cache", Boolean.parseBoolean(queryParams.get("cache")[0]));
-                    } else
+                    } else {
                         request.getContext().put("cache", true);
+                    }
+
+                    if (queryParams.containsKey("retiredCoursesEnabled")) {
+                        request.getRequest().put("retiredCoursesEnabled", Boolean.parseBoolean(queryParams.get("retiredCoursesEnabled")[0]));
+                    }
+                    
                     return null;
                 },
                 null,

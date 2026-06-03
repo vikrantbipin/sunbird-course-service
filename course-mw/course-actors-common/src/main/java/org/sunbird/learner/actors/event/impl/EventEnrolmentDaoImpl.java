@@ -192,7 +192,7 @@ public class EventEnrolmentDaoImpl implements EventEnrolmentDao {
         return userEventConsumption;
     }
 
-    private Map<String, Object> getEventDetails(RequestContext requestContext, String eventId) {
+    public Map<String, Object> getEventDetails(RequestContext requestContext, String eventId) {
         logger.info(requestContext, "EventEnrolmentDaoImpl:getEventDetails: eventId: " + eventId, null, null);
         Map<String, Object> response = new HashMap<>();
         try {
