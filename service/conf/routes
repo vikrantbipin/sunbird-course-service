@@ -140,6 +140,7 @@ POST     /v2/program/enroll	    		@controllers.courseenrollment.ExtendedCourseEn
 POST     /v2/blended/program/admin/enroll	    		@controllers.courseenrollment.ExtendedCourseEnrollmentController.blendedProgramEnrollCourseV2(request: play.mvc.Http.Request)
 POST     /v3/program/admin/bulkEnroll	    		@controllers.courseenrollment.ExtendedCourseEnrollmentController.adminBulkEnrollProgramV3(request: play.mvc.Http.Request)
 POST     /v3/user/enrol/courses/details/:uid	    @controllers.courseenrollment.ExtendedCourseEnrollmentController.getEnrolledCoursesDetailsWithProgress(uid:String, request: play.mvc.Http.Request)
+POST     /v4/user/enrol/courses/details	    @controllers.courseenrollment.ExtendedCourseEnrollmentController.getEnrolledCoursesDetailsWithProgressV4(request: play.mvc.Http.Request)
 POST     /v2/course/admin/enroll	    		@controllers.courseenrollment.ExtendedCourseEnrollmentController.adminEnrollCourseV2(request: play.mvc.Http.Request)
 POST     /v2/program/admin/enroll	    		@controllers.courseenrollment.ExtendedCourseEnrollmentController.adminEnrollProgramV2(request: play.mvc.Http.Request)
 POST     /v2/openprogram/enrol	    		@controllers.courseenrollment.ExtendedCourseEnrollmentController.openProgramEnrollV2(request: play.mvc.Http.Request)
@@ -150,3 +151,4 @@ GET      /v1/learningpathway/enroll/:id	    	@controllers.courseenrollment.Exten
 POST     /private/v3/user/enrol/courses/details/:uid	    @controllers.courseenrollment.ExtendedCourseEnrollmentController.privateGetEnrolledCoursesDetailsWithProgress(uid:String, request: play.mvc.Http.Request)
 POST	 /v1/externaltraining/batch/participants/list			@controllers.courseenrollment.ExtendedCourseEnrollmentController.getParticipantsForExternalTrainingBatch(request: play.mvc.Http.Request)
 POST    /v1/user/enrol/badge/details	    @controllers.courseenrollment.ExtendedCourseEnrollmentController.getEnrolledBadgeDetails(request: play.mvc.Http.Request)
+

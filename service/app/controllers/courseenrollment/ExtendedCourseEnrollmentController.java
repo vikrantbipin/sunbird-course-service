@@ -239,6 +239,30 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                 httpRequest);
     }
 
+    public CompletionStage<Result> getEnrolledCoursesDetailsWithProgressV4(Http.Request httpRequest) {
+        // Validate token first and extract userId from token/header context.
+        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
+        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId)
+                || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
+            throw new ProjectCommonException(
+                    ResponseCode.unAuthorized.getErrorCode(),
+                    ResponseCode.unAuthorized.getErrorMessage(),
+                    ResponseCode.UNAUTHORIZED.getResponseCode());
+        }
+
+        return handleRequest(extendedCourseEnrolmentActor, "enrolDetailsWithProgress",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    request.getContext().put(JsonKey.USER_ID, tokenUserId);
+                    request.getRequest().put(JsonKey.USER_ID, tokenUserId);
+                    validator.validateEnrollListRequestDetails(request);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
     public CompletionStage<Result> adminEnrollCourseV2(Http.Request httpRequest) {
         return handleRequest(extendedCourseEnrolmentActor, "enrollV2",
                 httpRequest.body().asJson(),
