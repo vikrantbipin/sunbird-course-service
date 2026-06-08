@@ -13,6 +13,7 @@ import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.learner.util.Util;
 import play.mvc.Http;
 import play.mvc.Result;
+import util.RequestInterceptor;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -286,6 +287,15 @@ public class CourseEnrollmentController extends BaseController {
     }
 
     public CompletionStage<Result> getEnrolledCourses_v4(Http.Request httpRequest) {
+        // Step 1: Validate token and extract userId from it
+        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
+        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId) || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
+            throw new ProjectCommonException(
+                ResponseCode.unAuthorized.getErrorCode(),
+                ResponseCode.unAuthorized.getErrorMessage(),
+                ResponseCode.UNAUTHORIZED.getResponseCode());
+        }
+
         return handleRequest(courseEnrolmentActor, "listEnrol",
             httpRequest.body().asJson(),
             (req) -> {
@@ -301,14 +311,16 @@ public class CourseEnrollmentController extends BaseController {
                     request.put("courseIds", courseIds);
                 }
 
-                // Fetch userId from token (no path param needed)
-                String tokenUserId = (String) request.getContext().get(JsonKey.REQUESTED_BY);
-                validator.validateRequestedBy(tokenUserId);
-
+                // Step 2: Pass the userId extracted from the valid token
                 request.getContext().put(JsonKey.USER_ID, tokenUserId);
                 request.getRequest().put(JsonKey.USER_ID, tokenUserId);
                 request.getContext().put("version", "v1");
-                request.getContext().put(JsonKey.QUERY_PARAMS, queryParams);
+                request.getContext().put(JsonKey.URL_QUERY_STRING, getQueryString(queryParams));
+                request.getContext().put(JsonKey.BATCH_DETAILS, httpRequest.queryString().get(JsonKey.BATCH_DETAILS));
+                if (queryParams.containsKey("cache")) {
+                    request.getContext().put("cache", Boolean.parseBoolean(queryParams.get("cache")[0]));
+                } else
+                    request.getContext().put("cache", true);
                 return null;
             },
             null, null,

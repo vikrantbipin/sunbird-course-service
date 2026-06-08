@@ -135,13 +135,20 @@ public class ExtendedCourseEnrollmentController extends BaseController {
     }
 
     public CompletionStage<Result> enrollmentSummaryV4(Http.Request httpRequest) {
+        // Step 1: Validate token and extract userId from it
+        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
+        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId) || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
+            throw new ProjectCommonException(
+                    ResponseCode.unAuthorized.getErrorCode(),
+                    ResponseCode.unAuthorized.getErrorMessage(),
+                    ResponseCode.UNAUTHORIZED.getResponseCode());
+        }
+
         return handleRequest(extendedCourseEnrolmentActor, "enrolmentInfoStats",
                 httpRequest.body().asJson(),
                 (req) -> {
                     Request request = (Request) req;
-                    // Fetch userId from token (no path param needed)
-                    String tokenUserId = (String) request.getContext().get(JsonKey.REQUESTED_BY);
-                    validator.validateRequestedBy(tokenUserId);
+                    // Step 2: Pass the userId extracted from the valid token
                     request.getContext().put(JsonKey.USER_ID, tokenUserId);
                     request.getRequest().put(JsonKey.USER_ID, tokenUserId);
                     return null;
