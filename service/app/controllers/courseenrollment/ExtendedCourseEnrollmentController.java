@@ -5,8 +5,10 @@ import controllers.BaseController;
 import controllers.courseenrollment.validator.CourseEnrollmentRequestValidator;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.util.JsonKey;
 import org.sunbird.common.request.Request;
+import org.sunbird.common.responsecode.ResponseCode;
 import play.mvc.Http;
 import play.mvc.Result;
 
@@ -123,6 +125,30 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                     validator.validateRequestedBy(userId);
                     request.getContext().put(JsonKey.USER_ID, userId);
                     request.getRequest().put(JsonKey.USER_ID, userId);
+                    return null;
+                },
+                null,
+                null,
+                getAllRequestHeaders((httpRequest)),
+                false,
+                httpRequest);
+    }
+
+    public CompletionStage<Result> enrollmentSummaryV4(String uid, Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "enrolmentInfoStats",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    String tokenUserId = (String) request.getContext().getOrDefault(JsonKey.REQUESTED_FOR, request.getContext().get(JsonKey.REQUESTED_BY));
+                    validator.validateRequestedBy(tokenUserId);
+                    if (!StringUtils.equals(uid, tokenUserId)) {
+                        throw new ProjectCommonException(
+                                ResponseCode.unAuthorized.getErrorCode(),
+                                ResponseCode.unAuthorized.getErrorMessage(),
+                                ResponseCode.UNAUTHORIZED.getResponseCode());
+                    }
+                    request.getContext().put(JsonKey.USER_ID, uid);
+                    request.getRequest().put(JsonKey.USER_ID, uid);
                     return null;
                 },
                 null,
