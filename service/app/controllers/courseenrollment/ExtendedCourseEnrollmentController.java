@@ -159,20 +159,12 @@ public class ExtendedCourseEnrollmentController extends BaseController {
     }
 
     public CompletionStage<Result> enrollmentSummaryV4(Http.Request httpRequest) {
-        // Step 1: Validate token and extract userId from it
-        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
-        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId) || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
-            throw new ProjectCommonException(
-                    ResponseCode.unAuthorized.getErrorCode(),
-                    ResponseCode.unAuthorized.getErrorMessage(),
-                    ResponseCode.UNAUTHORIZED.getResponseCode());
-        }
-
         return handleRequest(extendedCourseEnrolmentActor, "enrolmentInfoStats",
                 httpRequest.body().asJson(),
                 (req) -> {
                     Request request = (Request) req;
-                    // Step 2: Pass the userId extracted from the valid token
+                    String tokenUserId = (String) request.getContext().get(JsonKey.REQUESTED_BY);
+                    validator.validateRequestedBy(tokenUserId);
                     request.getContext().put(JsonKey.USER_ID, tokenUserId);
                     request.getRequest().put(JsonKey.USER_ID, tokenUserId);
                     return null;
@@ -263,20 +255,12 @@ public class ExtendedCourseEnrollmentController extends BaseController {
     }
 
     public CompletionStage<Result> getEnrolledCoursesDetailsWithProgressV4(Http.Request httpRequest) {
-        // Validate token first and extract userId from token/header context.
-        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
-        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId)
-                || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
-            throw new ProjectCommonException(
-                    ResponseCode.unAuthorized.getErrorCode(),
-                    ResponseCode.unAuthorized.getErrorMessage(),
-                    ResponseCode.UNAUTHORIZED.getResponseCode());
-        }
-
         return handleRequest(extendedCourseEnrolmentActor, "enrolDetailsWithProgress",
                 httpRequest.body().asJson(),
                 (req) -> {
                     Request request = (Request) req;
+                    String tokenUserId = (String) request.getContext().get(JsonKey.REQUESTED_BY);
+                    validator.validateRequestedBy(tokenUserId);
                     request.getContext().put(JsonKey.USER_ID, tokenUserId);
                     request.getRequest().put(JsonKey.USER_ID, tokenUserId);
                     validator.validateEnrollListRequestDetails(request);
