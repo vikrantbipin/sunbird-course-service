@@ -3,17 +3,13 @@ package controllers.courseenrollment;
 import akka.actor.ActorRef;
 import controllers.BaseController;
 import controllers.courseenrollment.validator.CourseEnrollmentRequestValidator;
-import org.apache.commons.lang3.StringUtils;
-import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.util.ActorOperations;
 import org.sunbird.common.models.util.JsonKey;
 import org.sunbird.common.models.util.ProjectUtil;
 import org.sunbird.common.request.Request;
-import org.sunbird.common.responsecode.ResponseCode;
 import org.sunbird.learner.util.Util;
 import play.mvc.Http;
 import play.mvc.Result;
-import util.RequestInterceptor;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -286,48 +282,6 @@ public class CourseEnrollmentController extends BaseController {
         return getEnrolledCourses(uid, httpRequest, "v2", true);
     }
 
-    public CompletionStage<Result> getEnrolledCourses_v4(Http.Request httpRequest) {
-        // Step 1: Validate token and extract userId from it
-        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
-        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId) || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
-            throw new ProjectCommonException(
-                ResponseCode.unAuthorized.getErrorCode(),
-                ResponseCode.unAuthorized.getErrorMessage(),
-                ResponseCode.UNAUTHORIZED.getResponseCode());
-        }
-
-        return handleRequest(courseEnrolmentActor, "listEnrol",
-            httpRequest.body().asJson(),
-            (req) -> {
-                Request request = (Request) req;
-                Map<String, String[]> queryParams = new HashMap<>(httpRequest.queryString());
-                if(queryParams.containsKey("fields")) {
-                    Set<String> fields = new HashSet<>(Arrays.asList(queryParams.get("fields")[0].split(",")));
-                    fields.addAll(Arrays.asList(JsonKey.NAME, JsonKey.DESCRIPTION, JsonKey.LEAF_NODE_COUNT, JsonKey.APP_ICON));
-                    queryParams.put("fields", fields.toArray(new String[0]));
-                }
-                if(queryParams.containsKey("courseIds")) {
-                    List<String> courseIds = new ArrayList<>(Arrays.asList(queryParams.get("courseIds")[0].split(",")));
-                    request.put("courseIds", courseIds);
-                }
-
-                // Step 2: Pass the userId extracted from the valid token
-                request.getContext().put(JsonKey.USER_ID, tokenUserId);
-                request.getRequest().put(JsonKey.USER_ID, tokenUserId);
-                request.getContext().put("version", "v1");
-                request.getContext().put(JsonKey.URL_QUERY_STRING, getQueryString(queryParams));
-                request.getContext().put(JsonKey.BATCH_DETAILS, httpRequest.queryString().get(JsonKey.BATCH_DETAILS));
-                if (queryParams.containsKey("cache")) {
-                    request.getContext().put("cache", Boolean.parseBoolean(queryParams.get("cache")[0]));
-                } else
-                    request.getContext().put("cache", true);
-                return null;
-            },
-            null, null,
-            getAllRequestHeaders((httpRequest)),
-            false,
-            httpRequest);
-    }
 
     public CompletionStage<Result> enrollProgram(Http.Request httpRequest, Boolean batchType) {
         return handleRequest(courseEnrolmentActor, "enrolProgram",

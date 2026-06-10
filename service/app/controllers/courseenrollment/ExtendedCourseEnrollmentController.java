@@ -105,6 +105,29 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                 httpRequest);
     }
 
+    public CompletionStage<Result> getEnrolledCoursesV4(Http.Request httpRequest) {
+        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
+        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId)
+                || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
+            throw new ProjectCommonException(
+                    ResponseCode.unAuthorized.getErrorCode(),
+                    ResponseCode.unAuthorized.getErrorMessage(),
+                    ResponseCode.UNAUTHORIZED.getResponseCode());
+        }
+
+        return handleRequest(extendedCourseEnrolmentActor, "list",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    request.getContext().put(JsonKey.USER_ID, tokenUserId);
+                    request.getRequest().put(JsonKey.USER_ID, tokenUserId);
+                    validator.validateEnrollListRequest(request);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
     public CompletionStage<Result> privateGetEnrolledCoursesV3(String uid, Http.Request httpRequest) {
         return handleRequest(extendedCourseEnrolmentActor, "privateList",
                 httpRequest.body().asJson(),
