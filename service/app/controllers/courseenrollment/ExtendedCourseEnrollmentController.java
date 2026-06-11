@@ -5,10 +5,13 @@ import controllers.BaseController;
 import controllers.courseenrollment.validator.CourseEnrollmentRequestValidator;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.sunbird.common.exception.ProjectCommonException;
 import org.sunbird.common.models.util.JsonKey;
 import org.sunbird.common.request.Request;
+import org.sunbird.common.responsecode.ResponseCode;
 import play.mvc.Http;
 import play.mvc.Result;
+import util.RequestInterceptor;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -102,6 +105,29 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                 httpRequest);
     }
 
+    public CompletionStage<Result> getEnrolledCoursesV4(Http.Request httpRequest) {
+        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
+        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId)
+                || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
+            throw new ProjectCommonException(
+                    ResponseCode.unAuthorized.getErrorCode(),
+                    ResponseCode.unAuthorized.getErrorMessage(),
+                    ResponseCode.UNAUTHORIZED.getResponseCode());
+        }
+
+        return handleRequest(extendedCourseEnrolmentActor, "list",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    request.getContext().put(JsonKey.USER_ID, tokenUserId);
+                    request.getRequest().put(JsonKey.USER_ID, tokenUserId);
+                    validator.validateEnrollListRequest(request);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
     public CompletionStage<Result> privateGetEnrolledCoursesV3(String uid, Http.Request httpRequest) {
         return handleRequest(extendedCourseEnrolmentActor, "privateList",
                 httpRequest.body().asJson(),
@@ -123,6 +149,24 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                     validator.validateRequestedBy(userId);
                     request.getContext().put(JsonKey.USER_ID, userId);
                     request.getRequest().put(JsonKey.USER_ID, userId);
+                    return null;
+                },
+                null,
+                null,
+                getAllRequestHeaders((httpRequest)),
+                false,
+                httpRequest);
+    }
+
+    public CompletionStage<Result> enrollmentSummaryV4(Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "enrolmentInfoStats",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    String tokenUserId = (String) request.getContext().get(JsonKey.REQUESTED_BY);
+                    validator.validateRequestedBy(tokenUserId);
+                    request.getContext().put(JsonKey.USER_ID, tokenUserId);
+                    request.getRequest().put(JsonKey.USER_ID, tokenUserId);
                     return null;
                 },
                 null,
@@ -203,6 +247,22 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                     validator.validateRequestedBy(userId);
                     request.getContext().put(JsonKey.USER_ID, userId);
                     request.getRequest().put(JsonKey.USER_ID, userId);
+                    validator.validateEnrollListRequestDetails(request);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
+    public CompletionStage<Result> getEnrolledCoursesDetailsWithProgressV4(Http.Request httpRequest) {
+        return handleRequest(extendedCourseEnrolmentActor, "enrolDetailsWithProgress",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    String tokenUserId = (String) request.getContext().get(JsonKey.REQUESTED_BY);
+                    validator.validateRequestedBy(tokenUserId);
+                    request.getContext().put(JsonKey.USER_ID, tokenUserId);
+                    request.getRequest().put(JsonKey.USER_ID, tokenUserId);
                     validator.validateEnrollListRequestDetails(request);
                     return null;
                 },
