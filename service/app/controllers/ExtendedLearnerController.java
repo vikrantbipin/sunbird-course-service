@@ -120,6 +120,10 @@ public class ExtendedLearnerController extends BaseController {
         }
     }
 
+    public CompletionStage<Result> getNgoContentState(Http.Request httpRequest) {
+        return getContentState(httpRequest);
+    }
+
     public CompletionStage<Result> updateContentStateByAdmin(Http.Request httpRequest) {
         JsonNode requestData = httpRequest.body().asJson();
         String loggingHeaders =  httpRequest.attrs().getOptional(Attrs.X_LOGGING_HEADERS).orElse(null);
@@ -160,4 +164,7 @@ public class ExtendedLearnerController extends BaseController {
     }
 
 
+    public CompletionStage<Result> updateNgoContentState(Http.Request httpRequest) {
+        return updateContentStateByAdmin(httpRequest);
+    }
 }

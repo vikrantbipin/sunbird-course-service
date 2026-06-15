@@ -125,7 +125,9 @@ GET  /v1/user/events/enroll/summary	    @controllers.eventmanagement.EventContro
 POST      /v2/user/events/list/:uid	    @controllers.eventmanagement.EventController.getUserEnrolledEventsListBasedOnEventTypes(uid:String, request: play.mvc.Http.Request)
 
 PATCH    /v2/content/state/update     	@controllers.ExtendedLearnerController.updateContentState(request: play.mvc.Http.Request)
+PATCH   /v2/ngo/content/state/update    @controllers.ExtendedLearnerController.updateNgoContentState(request: play.mvc.Http.Request)
 POST     /v2/content/state/read	        @controllers.ExtendedLearnerController.getContentState(request: play.mvc.Http.Request)
+POST    /v2/ngo/content/state/read    @controllers.ExtendedLearnerController.getNgoContentState(request: play.mvc.Http.Request)
 POST     /private/v2/content/state/read	 @controllers.ExtendedLearnerController.privateGetContentState(request: play.mvc.Http.Request)
 PATCH    /v2/content/state/admin/update  @controllers.ExtendedLearnerController.updateContentStateByAdmin(request: play.mvc.Http.Request)
 
