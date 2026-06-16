@@ -138,6 +138,15 @@ public class ExtendedLearnerController extends BaseController {
             JsonNode requestJson = httpRequest.body().asJson();
             Request request =
                     createAndInitRequest("getConsumption", requestJson, httpRequest);
+
+            String requestBodyUserId = (String) request.getRequest().getOrDefault(JsonKey.USER_ID, null);
+            if (StringUtils.isNotBlank(requestBodyUserId) && !requestBodyUserId.equalsIgnoreCase(tokenUserId)) {
+                throw new ProjectCommonException(
+                        ResponseCode.unAuthorized.getErrorCode(),
+                        ResponseCode.unAuthorized.getErrorMessage(),
+                        ResponseCode.UNAUTHORIZED.getResponseCode());
+            }
+
             request.getContext().put(JsonKey.REQUESTED_BY, tokenUserId);
             request.getContext().put(JsonKey.REQUESTED_FOR, tokenUserId);
             String userId = (String) request.getContext().getOrDefault(JsonKey.REQUESTED_FOR, request.getContext().get(JsonKey.REQUESTED_BY));
@@ -208,6 +217,14 @@ public class ExtendedLearnerController extends BaseController {
 
             Request reqObj = (Request) mapper.RequestMapper.mapRequest(requestData, Request.class);
             String requestedFor = (String) reqObj.getRequest().getOrDefault(JsonKey.USER_ID, null);
+
+            if (StringUtils.isNotBlank(requestedFor) && !requestedFor.equalsIgnoreCase(tokenUserId)) {
+                throw new ProjectCommonException(
+                        ResponseCode.unAuthorized.getErrorCode(),
+                        ResponseCode.unAuthorized.getErrorMessage(),
+                        ResponseCode.UNAUTHORIZED.getResponseCode());
+            }
+
             ExtendedRequestValidator.validateUpdateContent(reqObj);
             reqObj = transformUserId(reqObj);
             reqObj.setOperation("updateConsumption");
