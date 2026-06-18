@@ -105,6 +105,37 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                 httpRequest);
     }
 
+    public CompletionStage<Result> getEnrolledCoursesListV4(Http.Request httpRequest) {
+        String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
+        if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId)
+                || JsonKey.ANONYMOUS.equalsIgnoreCase(tokenUserId)) {
+            throw new ProjectCommonException(
+                    ResponseCode.unAuthorized.getErrorCode(),
+                    ResponseCode.unAuthorized.getErrorMessage(),
+                    ResponseCode.UNAUTHORIZED.getResponseCode());
+        }
+
+        return handleRequest(extendedCourseEnrolmentActor, "list",
+                httpRequest.body().asJson(),
+                (req) -> {
+                    Request request = (Request) req;
+                    // Extract userId from request body if present
+                    String requestBodyUserId = (String) request.getRequest().getOrDefault(JsonKey.USER_ID, null);
+                    if (StringUtils.isNotBlank(requestBodyUserId) && !requestBodyUserId.equalsIgnoreCase(tokenUserId)) {
+                        throw new ProjectCommonException(
+                                ResponseCode.unAuthorized.getErrorCode(),
+                                ResponseCode.unAuthorized.getErrorMessage(),
+                                ResponseCode.UNAUTHORIZED.getResponseCode());
+                    }
+                    request.getContext().put(JsonKey.USER_ID, tokenUserId);
+                    request.getRequest().put(JsonKey.USER_ID, tokenUserId);
+                    validator.validateEnrollListRequest(request);
+                    return null;
+                },
+                getAllRequestHeaders((httpRequest)),
+                httpRequest);
+    }
+
     public CompletionStage<Result> getEnrolledCoursesV4(Http.Request httpRequest) {
         String tokenUserId = RequestInterceptor.verifyRequestData(httpRequest);
         if (JsonKey.UNAUTHORIZED.equalsIgnoreCase(tokenUserId)
