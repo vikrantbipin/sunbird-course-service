@@ -1687,7 +1687,6 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
     val batchData: CourseBatch = courseBatchDao.readByIdWithLocalQuorum(courseId, batchId, request.getRequestContext)
     val enrolmentData: UserCourses = userCoursesDao.readWithLocalQuorum(request.getRequestContext, userId, courseId, batchId)
     val batchUserData: BatchUser = batchUserDao.readWithLocalQuorum(request.getRequestContext, batchId, userId)
-    val dataBatch: util.Map[String, AnyRef] = createBatchUserMapping(batchId, userId, batchUserData)
     if (batchUserData == null) {
       logger.warn(request.getRequestContext, s"BatchUser not found for batchId=$batchId, userId=$userId", null)
       ProjectCommonException.throwClientErrorException(
@@ -1695,6 +1694,7 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
         s"User $userId not found in batch $batchId"
       )
     }
+    val dataBatch: util.Map[String, AnyRef] = createBatchUserMapping(batchId, userId, batchUserData)
     getUpdatedStatus(enrolmentData)
     val courseMetadata = ContentCacheHandlerV2.getInstance().getContent(courseId)
     validateUnEnrolment(batchData, enrolmentData, courseMetadata)
