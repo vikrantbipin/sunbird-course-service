@@ -1335,5 +1335,6 @@ public final class JsonKey {
   public static final String ACTION_DATE = "actionDate";
   public static final String REASON ="reason";
   public static final String COMMENT = "comment";
+  public static final String DEV_USER_UNENROLMENT_EVENT_TOPIC = "dev_user_unenrolment_event";
   private JsonKey() {}
 }

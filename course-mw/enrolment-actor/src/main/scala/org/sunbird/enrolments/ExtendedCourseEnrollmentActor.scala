@@ -1719,6 +1719,8 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
       sender().tell(successResponse(), self)
       generateTelemetryAudit(userId, courseId, batchId, data, "unenrol", JsonKey.UPDATE, request.getContext)
       notifyUser(userId, batchData, JsonKey.REMOVE, "")
+      val topic = ProjectUtil.getConfigValue(JsonKey.DEV_USER_UNENROLMENT_EVENT_TOPIC)
+      publishKarmaPointsReversalEvent(topic,userId,courseId,batchId,request.getRequestContext)
       cacheUtil.delete(getCacheBatchKey(batchId))
     } else {
       ProjectCommonException.throwClientErrorException(ResponseCode.accessDeniedToEnrolOrUnenrolCourse, courseId)
@@ -1881,6 +1883,14 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
 
       // Notification
       notifyUser(userId, batchData, JsonKey.ADD, recentLang)
+      val dataMap = new java.util.HashMap[String, AnyRef]
+      val requestMap = new java.util.HashMap[String, AnyRef]
+      requestMap.put(JsonKey.COURSE_ID,courseId)
+      requestMap.put(JsonKey.USER_ID,userId)
+      requestMap.put(JsonKey.BATCH_ID,batchId)
+      dataMap.put(JsonKey.E_DATA,requestMap)
+      val topic = ProjectUtil.getConfigValue("kafka_user_enrolment_event_topic")
+      InstructionEventGenerator.createCourseEnrolmentEvent("", topic, dataMap)
 
     } else {
       ProjectCommonException.throwClientErrorException(
@@ -1998,5 +2008,24 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
         ResponseCode.userAlreadyEnrolledCourseWithDifferentBatch.getErrorMessage
       )
     }
+  }
+
+  private def publishKarmaPointsReversalEvent(topic: String, userId: String, courseId: String, batchId: String, requestContext: RequestContext): Unit = {
+
+    logger.info(requestContext, s"Publishing Karma Points Reversal event | topic=$topic, userId=$userId, courseId=$courseId, batchId=$batchId")
+    val actor = new java.util.HashMap[String, Object]()
+    actor.put(JsonKey.ID, "Karma points reversal")
+    actor.put(JsonKey.TYPE, "System")
+
+    val edata = new java.util.HashMap[String, Object]()
+    edata.put(JsonKey.USER_IDs, userId)
+    edata.put(JsonKey.COURSE_ID, courseId)
+    edata.put(JsonKey.BATCH_ID, batchId)
+
+    val event = new java.util.HashMap[String, Object]()
+    event.put(JsonKey.ACTOR, actor)
+    event.put(JsonKey.E_DATA, edata)
+
+    InstructionEventGenerator.pushInstructionEvent(topic, event)
   }
 }
