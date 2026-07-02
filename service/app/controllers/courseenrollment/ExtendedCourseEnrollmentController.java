@@ -216,9 +216,18 @@ public class ExtendedCourseEnrollmentController extends BaseController {
                 (request) -> {
                     Request req = (Request) request;
                     Map<String, String[]> queryParams = new HashMap<>(httpRequest.queryString());
-                    String courseId = req.getRequest().containsKey(JsonKey.COURSE_ID) ? JsonKey.COURSE_ID : JsonKey.COLLECTION_ID;
-                    req.getRequest().put(JsonKey.COURSE_ID, req.getRequest().get(courseId));
+                    String courseIdKey = req.getRequest().containsKey(JsonKey.COURSE_ID) ? JsonKey.COURSE_ID : JsonKey.COLLECTION_ID;
+                    String courseId = (String) req.getRequest().get(courseIdKey);
+                    req.getRequest().put(JsonKey.COURSE_ID, courseId);
                     validator.validateEnrollCourse(req);
+
+                    String reqLang = (String) req.getRequest().get(JsonKey.LANGUAGE);
+                    Map<String, String> validatedLangAndContent = validator.validateLanguageSupport(reqLang, courseId);
+                    if (MapUtils.isNotEmpty(validatedLangAndContent)
+                            && StringUtils.isNotBlank(MapUtils.getString(validatedLangAndContent, JsonKey.COURSE_ID))) {
+                        req.getRequest().put(JsonKey.RECENT_LANGUAGE, validatedLangAndContent.get(JsonKey.RECENT_LANGUAGE));
+                        req.getRequest().put(JsonKey.COURSE_ID, validatedLangAndContent.get(JsonKey.COURSE_ID));
+                    }
                     return null;
                 },
                 getAllRequestHeaders(httpRequest),
