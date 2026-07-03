@@ -341,8 +341,8 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
     val externalEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getExternalEnrollments(userId, request)
     val allEnrolledCourses = new java.util.ArrayList[java.util.Map[String, AnyRef]]
     isRetiredCoursesIncludedInEnrolList = true
-    val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails_v2(activeEnrolments, true, parseContentAttributesFromUrl(request))
-    val updatedEnrolmentList = updateProgressData(enrolmentList, request.getRequestContext)
+    val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails_v2(activeEnrolments, true, parseContentAttributesFromUrl(request), false)
+    val updatedEnrolmentList = updateProgressData(enrolmentList, request.getRequestContext, false)
     if (CollectionUtils.isNotEmpty(updatedEnrolmentList)) {
       allEnrolledCourses.addAll(updatedEnrolmentList)
     }
@@ -376,7 +376,7 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
     val externalEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getExternalEnrollments(userId, request)
     val allEnrolledCourses = new java.util.ArrayList[java.util.Map[String, AnyRef]]
     isRetiredCoursesIncludedInEnrolList = true
-    val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails_v2(activeEnrolments, false, parseContentAttributesFromUrl(request))
+    val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails_v2(activeEnrolments, false, parseContentAttributesFromUrl(request), false)
     if (CollectionUtils.isNotEmpty(enrolmentList)) {
       allEnrolledCourses.addAll(enrolmentList)
     }
@@ -416,6 +416,14 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
     try {
       logger.info(request.getRequestContext, "ExtendedCourseEnrollmentActor :: getEnrolmentList :: fetching data from cassandra with userId " + userId)
 
+      val status = request.get(JsonKey.STATUS) match {
+        case arr: Array[String] => arr
+        case list: java.util.List[String] => list.toArray(new Array[String](list.size()))
+        case str: String => Array(str)
+        case _ => null
+      }
+      val isUnenrolledRequest = status != null && status.exists(_.equalsIgnoreCase("Unenrolled"))
+
       val activeEnrolments: java.util.List[java.util.Map[String, AnyRef]] = getActiveEnrollments(userId, request)
       var isMoreThanOneCourse: Boolean = false
       if (request.get(Constants.COURSE_ID) != null) {
@@ -426,12 +434,12 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
       }
       val allEnrolledCourses = new java.util.ArrayList[java.util.Map[String, AnyRef]]
       if (CollectionUtils.isNotEmpty(activeEnrolments)) {
-        val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails_v2(activeEnrolments, isDetailsRequired, parseContentAttributesFromUrl(request))
-        val updatedEnrolmentList = updateProgressData(enrolmentList, request.getRequestContext)
+        val enrolmentList: java.util.List[java.util.Map[String, AnyRef]] = addCourseDetails_v2(activeEnrolments, isDetailsRequired, parseContentAttributesFromUrl(request), isUnenrolledRequest)
+        val updatedEnrolmentList = updateProgressData(enrolmentList, request.getRequestContext, isUnenrolledRequest)
         if (isDetailsRequired && !isMoreThanOneCourse) {
           addBatchDetails(updatedEnrolmentList, request, "v3")
           for (enrolment <- updatedEnrolmentList.asScala) {
-            if (isProgressEnabled && !enrolment.get(JsonKey.STATUS).equals(2)) {
+            if (isProgressEnabled && !enrolment.get(JsonKey.STATUS).equals(2) && !isUnenrolledRequest) {
               val courseId = enrolment.get(JsonKey.COURSE_ID).asInstanceOf[String]
               val recentLanguage = enrolment.get(JsonKey.RECENT_LANGUAGE).asInstanceOf[String]
               val batchId = enrolment.get(JsonKey.BATCH_ID).asInstanceOf[String]
@@ -660,16 +668,20 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
     enrolmentCourseDetails
   }
 
-  def addCourseDetails_v2(activeEnrolments: java.util.List[java.util.Map[String, AnyRef]], isDetailsRequired: Boolean, contentAttributes: util.List[String]): java.util.List[java.util.Map[String, AnyRef]] = {
-    activeEnrolments.filter(enrolment => isCourseEligible(enrolment)).map(enrolment => {
+  def addCourseDetails_v2(activeEnrolments: java.util.List[java.util.Map[String, AnyRef]], isDetailsRequired: Boolean, contentAttributes: util.List[String], isUnenrolledRequest: Boolean = false): java.util.List[java.util.Map[String, AnyRef]] = {
+    activeEnrolments.filter(enrolment => if (isUnenrolledRequest) true else isCourseEligible(enrolment)).map(enrolment => {
       val courseContent = getCourseContent(enrolment.get(JsonKey.COURSE_ID).asInstanceOf[String])
-      enrolment.put(JsonKey.LEAF_NODE_COUNT, courseContent.get(JsonKey.LEAF_NODE_COUNT))
+      if (courseContent != null && courseContent.containsKey(JsonKey.LEAF_NODE_COUNT)) {
+        enrolment.put(JsonKey.LEAF_NODE_COUNT, courseContent.get(JsonKey.LEAF_NODE_COUNT))
+      }
       if (isDetailsRequired) {
-        enrolment.put(JsonKey.COURSE_NAME, courseContent.get(JsonKey.NAME))
-        enrolment.put(JsonKey.DESCRIPTION, courseContent.get(JsonKey.DESCRIPTION))
-        enrolment.put(JsonKey.COURSE_LOGO_URL, courseContent.get(JsonKey.APP_ICON))
-        enrolment.put(JsonKey.CONTENT_ID, enrolment.get(JsonKey.COURSE_ID))
-        enrolment.put(JsonKey.COLLECTION_ID, enrolment.get(JsonKey.COURSE_ID))
+        if (courseContent != null) {
+          enrolment.put(JsonKey.COURSE_NAME, courseContent.get(JsonKey.NAME))
+          enrolment.put(JsonKey.DESCRIPTION, courseContent.get(JsonKey.DESCRIPTION))
+          enrolment.put(JsonKey.COURSE_LOGO_URL, courseContent.get(JsonKey.APP_ICON))
+          enrolment.put(JsonKey.CONTENT_ID, enrolment.get(JsonKey.COURSE_ID))
+          enrolment.put(JsonKey.COLLECTION_ID, enrolment.get(JsonKey.COURSE_ID))
+        }
       }
       val configuredFields: java.util.List[String] =
         if (CollectionUtils.isNotEmpty(contentAttributes)) {
@@ -683,9 +695,11 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
             .asJava
         }
       val filteredCourseContent = new java.util.HashMap[String, AnyRef]()
-      configuredFields.foreach { field =>
-        if (courseContent.containsKey(field)) {
-          filteredCourseContent.put(field, courseContent.get(field))
+      if (courseContent != null) {
+        configuredFields.foreach { field =>
+          if (courseContent.containsKey(field)) {
+            filteredCourseContent.put(field, courseContent.get(field))
+          }
         }
       }
       enrolment.put(JsonKey.CONTENT, filteredCourseContent)
@@ -825,17 +839,19 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
     }
   }
 
-  def updateProgressData(enrolments: java.util.List[java.util.Map[String, AnyRef]], requestContext: RequestContext): util.List[java.util.Map[String, AnyRef]] = {
+  def updateProgressData(enrolments: java.util.List[java.util.Map[String, AnyRef]], requestContext: RequestContext, isUnenrolledRequest: Boolean = false): util.List[java.util.Map[String, AnyRef]] = {
     enrolments.map { enrolment =>
-      val statusObj: Int = enrolment.getOrDefault("status", 0.asInstanceOf[AnyRef]).asInstanceOf[Int]
-      if (statusObj.equals(2)) {
-        enrolment.put("status", 2.asInstanceOf[AnyRef])
-        enrolment.put("completionPercentage", 100.asInstanceOf[AnyRef])
-      } else {
-        val leafNodesCount: Int = enrolment.getOrDefault("leafNodesCount", 0.asInstanceOf[AnyRef]).asInstanceOf[Int]
-        val progress: Int = enrolment.getOrDefault("progress", 0.asInstanceOf[AnyRef]).asInstanceOf[Int]
-        enrolment.put("status", getCompletionStatus(progress, leafNodesCount).asInstanceOf[AnyRef])
-        enrolment.put("completionPercentage", getCompletionPerc(progress, leafNodesCount).asInstanceOf[AnyRef])
+      if (!isUnenrolledRequest) {
+        val statusObj: Int = enrolment.getOrDefault("status", 0.asInstanceOf[AnyRef]).asInstanceOf[Int]
+        if (statusObj.equals(2)) {
+          enrolment.put("status", 2.asInstanceOf[AnyRef])
+          enrolment.put("completionPercentage", 100.asInstanceOf[AnyRef])
+        } else {
+          val leafNodesCount: Int = enrolment.getOrDefault("leafNodesCount", 0.asInstanceOf[AnyRef]).asInstanceOf[Int]
+          val progress: Int = enrolment.getOrDefault("progress", 0.asInstanceOf[AnyRef]).asInstanceOf[Int]
+          enrolment.put("status", getCompletionStatus(progress, leafNodesCount).asInstanceOf[AnyRef])
+          enrolment.put("completionPercentage", getCompletionPerc(progress, leafNodesCount).asInstanceOf[AnyRef])
+        }
       }
 
       jsonFields.foreach { field =>
