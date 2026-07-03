@@ -1330,6 +1330,11 @@ public final class JsonKey {
   public static final String FUTURE_EVENT = "futureEvent";
   public static final String PAST_EVENT = "pastEvent";
   public static final String PRESENT_EVENT = "presentEvent";
-
+  public static final String COURSE_UNENROLL_ALLOWED_PRIMARY_CATEGORY = "course_unenroll_allowed_primary_category";
+  public static final String USER_ENROLMENTS_HISTORY_DB ="enrollment_history_by_action";
+  public static final String ACTION_DATE = "actionDate";
+  public static final String REASON ="reason";
+  public static final String COMMENT = "comment";
+  public static final String DEV_USER_UNENROLMENT_EVENT_TOPIC = "dev_user_unenrolment_event";
   private JsonKey() {}
 }
