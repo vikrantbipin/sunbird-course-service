@@ -958,6 +958,8 @@ class ExtendedCourseEnrollmentActor @Inject()(@Named("course-batch-notification-
     if (!isAdminAPI && (contentData.size() == 0 || !util.Arrays.asList(getConfigValue(JsonKey.PROGRAM_ENROLL_ALLOWED_PRIMARY_CATEGORY).split(","): _*).contains(contentData.get(JsonKey.PRIMARYCATEGORY).asInstanceOf[String])))
       ProjectCommonException.throwClientErrorException(ResponseCode.accessDeniedToEnrolOrUnenrolCourse, programId);
     val userId: String = request.get(JsonKey.USER_ID).asInstanceOf[String]
+    // Volunteers may re-enroll only into courses eligible for their root org
+    validateVolunteerEligibility(userId, programId, request.getRequestContext)
     val batchId: String = request.get(JsonKey.BATCH_ID).asInstanceOf[String]
     val batchData: CourseBatch = courseBatchDao.readById(programId, batchId, request.getRequestContext)
     val verifyBatchType: Boolean = Option(request.getContext.get("verifyBatchType").asInstanceOf[Boolean]).getOrElse(false)
